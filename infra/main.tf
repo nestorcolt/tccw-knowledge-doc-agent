@@ -25,26 +25,32 @@ data "aws_s3_bucket" "source_bucket" {
   bucket = var.source_bucket_name
 }
 
-# CloudWatch Log Group for Lambda
-resource "aws_cloudwatch_log_group" "lambda_log_group" {
-  name              = "/aws/lambda/${var.lambda_function_name}"
-  retention_in_days = 14
+# Output the ECS task definition ARN
+output "ecs_task_definition_arn" {
+  description = "The ARN of the ECS task definition"
+  value       = aws_ecs_task_definition.tccw_knowledge_doc_agent.arn
 }
 
-# Output the Lambda function ARN
-output "lambda_function_arn" {
-  description = "The ARN of the Lambda function"
-  value       = aws_lambda_function.tccw_knowledge_doc_agent.arn
+# Output the ECS cluster name
+output "ecs_cluster_name" {
+  description = "The name of the ECS cluster"
+  value       = aws_ecs_cluster.tccw_knowledge_doc_agent.name
 }
 
-# Output the Lambda function name
-output "lambda_function_name" {
-  description = "The name of the Lambda function"
-  value       = aws_lambda_function.tccw_knowledge_doc_agent.function_name
+# Output the ECR repository URL
+output "ecr_repository_url" {
+  description = "The URL of the ECR repository"
+  value       = aws_ecr_repository.tccw_knowledge_doc_agent.repository_url
 }
 
-# Output the S3 bucket name that triggers the Lambda
+# Output the S3 bucket name that triggers the ECS task
 output "source_bucket_name" {
-  description = "The name of the S3 bucket that triggers the Lambda"
+  description = "The name of the S3 bucket that triggers the ECS task"
   value       = var.source_bucket_name
+}
+
+# Output the EventBridge rule ARN
+output "eventbridge_rule_arn" {
+  description = "The ARN of the EventBridge rule"
+  value       = aws_cloudwatch_event_rule.s3_object_created.arn
 }

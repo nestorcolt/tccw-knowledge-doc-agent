@@ -190,3 +190,9 @@ variable "subnet_ids" {
   type        = list(string)
   default     = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"] # Replace with your subnet IDs
 }
+
+variable "build_docker_image" {
+  description = "Whether to build the Docker image during Terraform apply"
+  type        = bool
+  default     = false
+}

@@ -16,11 +16,12 @@ resource "aws_ecr_lifecycle_policy" "tccw_knowledge_doc_agent" {
     rules = [
       {
         rulePriority = 1,
-        description  = "Keep last 3 images",
+        description  = "Keep last 3 images with 'latest' tag",
         selection = {
-          tagStatus   = "any",
-          countType   = "imageCountMoreThan",
-          countNumber = 3
+          tagStatus      = "tagged",
+          tagPatternList = ["latest"],
+          countType      = "imageCountMoreThan",
+          countNumber    = 3
         },
         action = {
           type = "expire"
@@ -28,9 +29,9 @@ resource "aws_ecr_lifecycle_policy" "tccw_knowledge_doc_agent" {
       },
       {
         rulePriority = 2,
-        description  = "Expire images older than 30 days",
+        description  = "Expire untagged images older than 30 days",
         selection = {
-          tagStatus   = "any",
+          tagStatus   = "untagged",
           countType   = "sinceImagePushed",
           countUnit   = "days",
           countNumber = 30
@@ -45,6 +46,8 @@ resource "aws_ecr_lifecycle_policy" "tccw_knowledge_doc_agent" {
 
 # Null resource to build and push Docker image
 resource "null_resource" "docker_build_push" {
+  count = var.build_docker_image ? 1 : 0
+
   triggers = {
     dockerfile_md5   = fileexists("${path.module}/../Dockerfile") ? filemd5("${path.module}/../Dockerfile") : timestamp()
     entry_script_md5 = fileexists("${path.module}/../entry.py") ? filemd5("${path.module}/../entry.py") : timestamp()
@@ -54,7 +57,13 @@ resource "null_resource" "docker_build_push" {
   }
 
   provisioner "local-exec" {
-    command = "bash ${path.module}/build_and_push.sh ${var.ecr_repository_name} latest ${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url} ${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url}:latest ${var.aws_region} true"
+    command = <<-EOT
+      if command -v docker &>/dev/null; then
+        bash ${path.module}/build_and_push.sh ${var.ecr_repository_name} latest ${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url} ${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url}:latest ${var.aws_region} true
+      else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] Docker not found. Skipping image build and push. You will need to build and push the image manually."
+      fi
+    EOT
   }
 
   depends_on = [aws_ecr_repository.tccw_knowledge_doc_agent]

@@ -3,13 +3,14 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
-# Copy only the files needed for installation
+# Copy necessary files for installation
 COPY pyproject.toml /build/
+COPY src/ /build/src/
 
-# Install build dependencies and the package in development mode
+# Install build dependencies and build the package
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir build wheel && \
-    pip wheel --no-cache-dir --wheel-dir /build/wheels -e .
+    pip wheel --no-cache-dir --wheel-dir /build/wheels .
 
 # Stage 2: Runtime
 FROM python:3.12-slim

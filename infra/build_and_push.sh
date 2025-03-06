@@ -13,8 +13,20 @@ log() {
 # Function to clean up Docker images
 cleanup() {
     log "INFO" "Cleaning up Docker images..."
-    docker rmi "${TASK_NAME}:${TASK_TAG}" 2>/dev/null || true
-    docker rmi "${ECR_FULL_URL}" 2>/dev/null || true
+    if command -v docker &>/dev/null; then
+        docker rmi "${TASK_NAME}:${TASK_TAG}" 2>/dev/null || true
+        docker rmi "${ECR_FULL_URL}" 2>/dev/null || true
+    else
+        log "WARN" "Docker not found, skipping cleanup"
+    fi
+}
+
+# Function to validate Docker installation
+check_docker() {
+    if ! command -v docker &>/dev/null; then
+        log "ERROR" "Docker is not installed or not in PATH. Please install Docker and ensure it's in your PATH."
+        exit 1
+    fi
 }
 
 # Function to validate AWS CLI installation
@@ -60,49 +72,29 @@ main() {
     # Check AWS CLI installation
     check_aws_cli
 
+    # Check Docker installation
+    check_docker
+
     # Start the process
     log "INFO" "Starting Docker build and push process..."
     log "INFO" "Task: ${TASK_NAME}:${TASK_TAG}"
     log "INFO" "ECR URL: ${ECR_FULL_URL}"
+    log "INFO" "Build flag: ${BUILD}"
 
-    # Create Dockerfile if it doesn't exist
-    if [[ ! -f "../Dockerfile" ]]; then
-        log "INFO" "Creating Dockerfile..."
-        cat >"../Dockerfile" <<'EOF'
-FROM python:3.12-slim
-
-WORKDIR /app
-
-# Copy project files
-COPY . /app/
-
-# Install dependencies
-RUN pip install --no-cache-dir -e .
-
-# Copy lambda function to root
-COPY infra/lambda/lambda_function.py /app/lambda_function.py
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Set entrypoint
-ENTRYPOINT ["python", "-c", "import os, sys, json, boto3; from lambda_function import lambda_handler; event = {'Records': [{'s3': {'bucket': {'name': os.environ.get('S3_EVENT_BUCKET')}, 'object': {'key': os.environ.get('S3_EVENT_KEY')}}}]}; lambda_handler(event, None)"]
-EOF
-        log "INFO" "Dockerfile created successfully"
-    fi
-
-    # Log in to ECR
+    # Login to ECR
     log "INFO" "Logging in to ECR..."
     if ! aws ecr get-login-password --region "${REGION}" | docker login --username AWS --password-stdin "${ECR_URL}"; then
         log "ERROR" "Failed to log in to ECR"
+        cleanup
         exit 1
     fi
 
+    # Build Docker image if requested
     if [[ "${BUILD}" == "true" ]]; then
-        # Build Docker image
         log "INFO" "Building Docker image..."
         if ! docker build -t "${TASK_NAME}:${TASK_TAG}" ..; then
-            log "ERROR" "Docker build failed"
+            log "ERROR" "Failed to build Docker image"
+            cleanup
             exit 1
         fi
 
@@ -110,29 +102,25 @@ EOF
         log "INFO" "Tagging Docker image..."
         if ! docker tag "${TASK_NAME}:${TASK_TAG}" "${ECR_FULL_URL}"; then
             log "ERROR" "Failed to tag Docker image"
+            cleanup
             exit 1
         fi
 
-        # Push to ECR
-        log "INFO" "Pushing to ECR..."
+        # Push Docker image to ECR
+        log "INFO" "Pushing Docker image to ECR..."
         if ! docker push "${ECR_FULL_URL}"; then
-            log "ERROR" "Failed to push Docker image"
+            log "ERROR" "Failed to push Docker image to ECR"
+            cleanup
             exit 1
         fi
 
-        log "SUCCESS" "Successfully pushed ${ECR_FULL_URL} to ECR"
+        log "INFO" "Docker image successfully built and pushed to ECR"
     else
-        log "INFO" "Skipping build, tag and push steps as BUILD=false"
+        log "INFO" "Skipping Docker build as requested"
     fi
+
+    cleanup
 }
 
-# Trap for cleanup on script exit
-trap cleanup EXIT
-
-# Execute main function with error handling
-{
-    main "$@"
-} || {
-    log "ERROR" "Script failed! Check the logs above for details."
-    exit 1
-}
+# Run the main function
+main
