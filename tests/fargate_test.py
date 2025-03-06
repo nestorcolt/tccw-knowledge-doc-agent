@@ -2,6 +2,8 @@ import boto3
 import uuid
 import time
 import json
+import os
+from datetime import datetime
 
 # Configuration
 REGION = "eu-west-1"  # Update to match your region
@@ -20,24 +22,80 @@ More sample content to process.
 """
 
 
-def upload_test_file():
-    """Upload a test file to S3 to trigger the pipeline"""
+def upload_test_files():
+    """Upload multiple test files to the same directory in S3 to trigger the pipeline"""
     s3 = boto3.client("s3", region_name=REGION)
 
-    # Create a unique filename
-    test_file_key = f"{PREFIX}test/document_{uuid.uuid4()}.txt"
+    # Create a unique directory name
+    test_dir_name = f"test_{uuid.uuid4().hex[:8]}"
+    test_dir_path = f"{PREFIX}{test_dir_name}/"
 
-    print(f"Uploading test file to s3://{SOURCE_BUCKET}/{test_file_key}")
+    # Create multiple files in the same directory
+    file_keys = []
+    for i in range(1, 4):
+        test_file_key = f"{test_dir_path}document_{i}.md"
+        file_keys.append(test_file_key)
 
-    # Upload the file
-    s3.put_object(
-        Bucket=SOURCE_BUCKET,
-        Key=test_file_key,
-        Body=TEST_CONTENT,
-        ContentType="text/markdown",
+        # Add file number to content to make each file unique
+        modified_content = (
+            TEST_CONTENT
+            + f"\n\n## File {i}\nThis is file number {i} in the test directory."
+        )
+
+        print(f"Uploading test file to s3://{SOURCE_BUCKET}/{test_file_key}")
+
+        # Upload the file
+        s3.put_object(
+            Bucket=SOURCE_BUCKET,
+            Key=test_file_key,
+            Body=modified_content,
+            ContentType="text/markdown",
+        )
+
+    return test_dir_path, file_keys
+
+
+def invoke_lambda_directly(function_name, directory_path):
+    """Directly invoke the Lambda function with a simulated S3 event"""
+    lambda_client = boto3.client("lambda", region_name=REGION)
+
+    # Create a simulated S3 event for one of the files
+    test_file_key = f"{directory_path}document_1.md"
+    s3_event = {
+        "Records": [
+            {
+                "eventVersion": "2.1",
+                "eventSource": "aws:s3",
+                "awsRegion": REGION,
+                "eventTime": datetime.now().isoformat(),
+                "eventName": "ObjectCreated:Put",
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "bucket": {"name": SOURCE_BUCKET},
+                    "object": {
+                        "key": test_file_key,
+                        "size": len(TEST_CONTENT),
+                        "eTag": "test-etag",
+                    },
+                },
+            }
+        ]
+    }
+
+    print(f"Invoking Lambda function {function_name} directly with simulated S3 event")
+    print(f"Event payload: {json.dumps(s3_event, indent=2)}")
+
+    # Invoke the Lambda function
+    response = lambda_client.invoke(
+        FunctionName=function_name,
+        InvocationType="RequestResponse",
+        Payload=json.dumps(s3_event),
     )
 
-    return test_file_key
+    # Parse and return the response
+    payload = json.loads(response["Payload"].read().decode())
+    print(f"Lambda response: {json.dumps(payload, indent=2)}")
+    return payload
 
 
 def check_lambda_logs(function_name, minutes=5):
@@ -80,6 +138,42 @@ def check_lambda_logs(function_name, minutes=5):
 
     except Exception as e:
         print(f"Error retrieving logs: {str(e)}")
+
+
+def check_eventbridge_events(source, detail_type, minutes=5):
+    """Check EventBridge events that were recently sent"""
+    events = boto3.client("events", region_name=REGION)
+    cloudtrail = boto3.client("cloudtrail", region_name=REGION)
+
+    # Calculate start time (minutes ago)
+    start_time = datetime.fromtimestamp(time.time() - (minutes * 60))
+
+    try:
+        # Look up events in CloudTrail
+        response = cloudtrail.lookup_events(
+            LookupAttributes=[
+                {
+                    "AttributeKey": "EventSource",
+                    "AttributeValue": "events.amazonaws.com",
+                }
+            ],
+            StartTime=start_time,
+            MaxResults=10,
+        )
+
+        print(f"\n--- Recent EventBridge Events ---")
+        for event in response.get("Events", []):
+            event_data = json.loads(event.get("CloudTrailEvent", "{}"))
+            if "PutEvents" in event_data.get("eventName", ""):
+                print(f"Event: {event_data.get('eventName')}")
+                print(f"Time: {event_data.get('eventTime')}")
+                print(
+                    f"Request: {json.dumps(event_data.get('requestParameters', {}), indent=2)}"
+                )
+                print("---")
+
+    except Exception as e:
+        print(f"Error checking EventBridge events: {str(e)}")
 
 
 def check_ecs_tasks(cluster_name, minutes=10):
@@ -174,42 +268,6 @@ def check_task_logs(cluster_name, task_arn):
         print(f"Error retrieving task details: {str(e)}")
 
 
-def check_eventbridge_events(source, detail_type, minutes=5):
-    """Check EventBridge events that were recently sent"""
-    events = boto3.client("events", region_name=REGION)
-    cloudtrail = boto3.client("cloudtrail", region_name=REGION)
-
-    # Calculate start time (minutes ago)
-    start_time = time.time() - (minutes * 60)
-
-    try:
-        # Look up events in CloudTrail
-        response = cloudtrail.lookup_events(
-            LookupAttributes=[
-                {
-                    "AttributeKey": "EventSource",
-                    "AttributeValue": "events.amazonaws.com",
-                }
-            ],
-            StartTime=start_time,
-            MaxResults=10,
-        )
-
-        print(f"\n--- Recent EventBridge Events ---")
-        for event in response.get("Events", []):
-            event_data = json.loads(event.get("CloudTrailEvent", "{}"))
-            if "PutEvents" in event_data.get("eventName", ""):
-                print(f"Event: {event_data.get('eventName')}")
-                print(f"Time: {event_data.get('eventTime')}")
-                print(
-                    f"Request: {json.dumps(event_data.get('requestParameters', {}), indent=2)}"
-                )
-                print("---")
-
-    except Exception as e:
-        print(f"Error checking EventBridge events: {str(e)}")
-
-
 def main():
     # Configuration
     lambda_function_name = "tccw-knowledge-doc-agent"
@@ -217,18 +275,25 @@ def main():
     event_source = "tccw.knowledge.doc.agent"
     event_detail_type = "S3ObjectCreated"
 
-    # Upload test file
-    test_file_key = upload_test_file()
-    print(f"Test file uploaded: {test_file_key}")
+    # Upload test files to a unique directory
+    test_dir_path, file_keys = upload_test_files()
+    print(f"Test directory created: {test_dir_path}")
+    print(f"Test files uploaded: {', '.join(file_keys)}")
 
-    # Wait for Lambda to process
-    print("Waiting for Lambda to process (10 seconds)...")
-    time.sleep(10)
+    # Wait for S3 event to propagate
+    print("Waiting for S3 events to propagate (5 seconds)...")
+    time.sleep(5)
+
+    # Option 1: Let S3 event trigger Lambda naturally
+    # Option 2: Directly invoke Lambda with simulated event
+    lambda_response = invoke_lambda_directly(lambda_function_name, test_dir_path)
 
     # Check Lambda logs
+    print("Checking Lambda logs...")
     check_lambda_logs(lambda_function_name)
 
     # Check EventBridge events
+    print("Checking EventBridge events...")
     check_eventbridge_events(event_source, event_detail_type)
 
     # Wait for ECS task to start
@@ -236,9 +301,11 @@ def main():
     time.sleep(30)
 
     # Check ECS tasks
+    print("Checking ECS tasks...")
     check_ecs_tasks(ecs_cluster_name)
 
     print("\nTest complete! Check the console for more details if needed.")
+    print(f"Test directory: {test_dir_path}")
 
 
 if __name__ == "__main__":

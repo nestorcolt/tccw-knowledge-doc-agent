@@ -2,6 +2,7 @@ import boto3
 import json
 import os
 import logging
+import re
 
 # Configure logging
 logger = logging.getLogger()
@@ -9,6 +10,7 @@ logger.setLevel(os.environ.get("APP_LOG_LEVEL", "INFO"))
 
 # Initialize AWS clients
 eventbridge = boto3.client("events")
+s3_client = boto3.client("s3")
 
 
 class Config:
@@ -49,13 +51,50 @@ def should_ignore(key):
     return False
 
 
-def put_event_to_eventbridge(bucket, key):
+def extract_inner_directory(key):
     """
-    Puts an event to EventBridge to trigger the ECS task
+    Extracts the inner directory path from a full S3 key.
+    For example, if key is "knowledge_base/topic_a/file.txt",
+    this will return "knowledge_base/topic_a/"
+    """
+    # Remove the base prefix if it exists
+    base_prefix = Config.get("SOURCE_BUCKET_PREFIX")
+    if key.startswith(base_prefix):
+        # Keep the base prefix in the result
+        path_parts = key.split("/")
+
+        # If there are at least 2 parts (base prefix and something else)
+        if len(path_parts) > 1:
+            # Get the directory containing the file (include the base prefix)
+            directory_path = "/".join(path_parts[:-1]) + "/"
+            return directory_path
+
+    # If we can't extract a proper directory, return the original key
+    return key
+
+
+def check_directory_exists(bucket, directory):
+    """
+    Verify if the directory exists and has content
+    """
+    try:
+        # List objects with the directory prefix
+        response = s3_client.list_objects_v2(Bucket=bucket, Prefix=directory, MaxKeys=1)
+
+        # If there are contents, the directory exists
+        return "Contents" in response and len(response["Contents"]) > 0
+    except Exception as e:
+        logger.error(f"Error checking directory {directory}: {str(e)}")
+        return False
+
+
+def put_event_to_eventbridge(bucket, directory):
+    """
+    Puts an event to EventBridge to trigger the ECS task with the directory path
     """
     detail = {
         "bucket": bucket,
-        "key": key,
+        "key": directory,
         "cluster": Config.get("ECS_CLUSTER_NAME"),
         "taskDefinition": Config.get("ECS_TASK_NAME"),
         "containerName": Config.get("ECS_CONTAINER_NAME"),
@@ -85,6 +124,9 @@ def lambda_handler(event, context):
     """
     logger.info(f"Received event: {json.dumps(event)}")
 
+    # Track processed directories to avoid duplicate processing
+    processed_directories = set()
+
     # Process S3 event records
     for record in event.get("Records", []):
         # Check if this is an S3 event
@@ -110,8 +152,24 @@ def lambda_handler(event, context):
             logger.info(f"Ignoring file {key} as it matches an ignored prefix")
             continue
 
-        # Put event to EventBridge
-        success = put_event_to_eventbridge(bucket, key)
+        # Extract the directory path from the key
+        directory = extract_inner_directory(key)
+
+        # Skip if we've already processed this directory in this batch
+        if directory in processed_directories:
+            logger.info(f"Skipping already processed directory: {directory}")
+            continue
+
+        # Verify the directory exists
+        if not check_directory_exists(bucket, directory):
+            logger.warning(f"Directory does not exist or is empty: {directory}")
+            continue
+
+        # Add to processed set
+        processed_directories.add(directory)
+
+        # Put event to EventBridge with the directory path
+        success = put_event_to_eventbridge(bucket, directory)
 
         if not success:
             return {
@@ -121,5 +179,10 @@ def lambda_handler(event, context):
 
     return {
         "statusCode": 200,
-        "body": json.dumps({"message": "Successfully processed S3 events"}),
+        "body": json.dumps(
+            {
+                "message": "Successfully processed S3 events",
+                "processed_directories": list(processed_directories),
+            }
+        ),
     }

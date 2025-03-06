@@ -219,7 +219,7 @@ variable "task_timeout_lambda_memory_size" {
 variable "task_timeout_minutes" {
   description = "Maximum allowed runtime for ECS tasks in minutes before termination"
   type        = number
-  default     = 20
+  default     = 3
 }
 
 variable "task_timeout_dry_run" {
