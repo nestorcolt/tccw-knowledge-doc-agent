@@ -1,27 +1,32 @@
 #!/bin/bash
 set -e
 
-# Define directories
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-BUILD_DIR="${SCRIPT_DIR}/build"
-LAMBDA_DIR="${SCRIPT_DIR}/lambda"
-PACKAGE_DIR="${BUILD_DIR}/package"
-ZIP_FILE="${BUILD_DIR}/lambda_function.zip"
+echo "Building Lambda function package..."
 
-echo "Cleaning up previous builds..."
-rm -rf "${BUILD_DIR}"
-mkdir -p "${PACKAGE_DIR}"
+# Check if zip is installed, install if not
+if ! command -v zip &>/dev/null; then
+    echo "zip command not found, attempting to install..."
+    if command -v apt-get &>/dev/null; then
+        sudo apt-get update && sudo apt-get install -y zip
+    elif command -v yum &>/dev/null; then
+        sudo yum install -y zip
+    elif command -v brew &>/dev/null; then
+        brew install zip
+    else
+        echo "ERROR: Could not install zip. Please install it manually."
+        exit 1
+    fi
+fi
 
-echo "Installing dependencies and project..."
-cd "${ROOT_DIR}"
-pip3 install -t "${PACKAGE_DIR}" .
+# Create build directory
+mkdir -p build/package
 
-echo "Copying lambda function..."
-cp "${LAMBDA_DIR}/lambda_function.py" "${PACKAGE_DIR}/"
+# Copy only Lambda function code (no dependencies)
+cp lambda/lambda_function.py build/package/
 
-echo "Creating zip package..."
-cd "${PACKAGE_DIR}"
-zip -r "${ZIP_FILE}" .
+# Create zip file
+cd build/package
+zip -r ../../lambda_function.zip .
+cd ../..
 
-echo "Package created at ${ZIP_FILE}"
+echo "Lambda package created successfully"

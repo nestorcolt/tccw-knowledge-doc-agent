@@ -114,6 +114,7 @@ def lambda_handler(event, context):
 
         # Extract a topic from the container name
         topic = "Default Topic"
+        
         if container_prefix:
             # Get the last folder name from the path
             topic = (

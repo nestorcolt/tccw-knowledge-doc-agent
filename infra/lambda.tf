@@ -1,7 +1,18 @@
-# Null resource to run the packaging script
+# Null resource to run the layer packaging script
+resource "null_resource" "lambda_layer" {
+  triggers = {
+    requirements_md5 = filemd5("${path.module}/lambda/requirements.txt")
+  }
+
+  provisioner "local-exec" {
+    command = "bash ${path.module}/build_layer.sh"
+  }
+}
+
+# Null resource to run the function packaging script
 resource "null_resource" "lambda_package" {
   triggers = {
-    always_run = "${timestamp()}"
+    function_md5 = filemd5("${path.module}/lambda/lambda_function.py")
   }
 
   provisioner "local-exec" {
@@ -9,12 +20,21 @@ resource "null_resource" "lambda_package" {
   }
 }
 
+# Archive file for Lambda layer
+data "archive_file" "lambda_layer_zip" {
+  depends_on = [null_resource.lambda_layer]
+
+  type        = "zip"
+  source_dir  = "${path.module}/build/layer"
+  output_path = "${path.module}/lambda_layer.zip"
+}
+
 # Archive file for Lambda function
 data "archive_file" "lambda_zip" {
   depends_on = [null_resource.lambda_package]
 
   type        = "zip"
-  source_file = "${path.module}/build/lambda_function.zip"
+  source_dir  = "${path.module}/build/package"
   output_path = "${path.module}/lambda_function.zip"
 }
 
@@ -156,17 +176,61 @@ resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
   policy_arn = aws_iam_policy.lambda_policy.arn
 }
 
-# Lambda function
+# Create S3 bucket for Lambda code if it doesn't exist
+resource "aws_s3_bucket" "lambda_code_bucket" {
+  bucket = var.lambda_code_bucket
+}
+
+# Upload Lambda layer to S3
+resource "aws_s3_object" "lambda_layer" {
+  bucket = aws_s3_bucket.lambda_code_bucket.id
+  key    = "${var.lambda_function_name}-layer/${filemd5("${path.module}/lambda_layer.zip")}.zip"
+  source = "${path.module}/lambda_layer.zip"
+  etag   = filemd5("${path.module}/lambda_layer.zip")
+}
+
+# Upload Lambda package to S3
+resource "aws_s3_object" "lambda_package" {
+  bucket = aws_s3_bucket.lambda_code_bucket.id
+  key    = "${var.lambda_function_name}/${filemd5("${path.module}/lambda_function.zip")}.zip"
+  source = "${path.module}/lambda_function.zip"
+  etag   = filemd5("${path.module}/lambda_function.zip")
+}
+
+# Create Lambda layer
+resource "aws_lambda_layer_version" "dependencies" {
+  layer_name = "${var.lambda_function_name}-dependencies"
+
+  s3_bucket = aws_s3_bucket.lambda_code_bucket.id
+  s3_key    = aws_s3_object.lambda_layer.key
+
+  compatible_runtimes = [var.lambda_runtime]
+
+  depends_on = [aws_s3_object.lambda_layer]
+}
+
+# Lambda function using S3 for code and the layer for dependencies
 resource "aws_lambda_function" "tccw_knowledge_doc_agent" {
-  function_name    = var.lambda_function_name
-  description      = var.lambda_description
-  role             = aws_iam_role.lambda_role.arn
-  handler          = var.lambda_handler
-  runtime          = var.lambda_runtime
-  timeout          = var.lambda_timeout
-  memory_size      = var.lambda_memory_size
-  filename         = "${path.module}/lambda_function.zip"
+  function_name = var.lambda_function_name
+  description   = var.lambda_description
+  role          = aws_iam_role.lambda_role.arn
+  handler       = var.lambda_handler
+  runtime       = var.lambda_runtime
+  timeout       = var.lambda_timeout
+  memory_size   = var.lambda_memory_size
+
+  # Use S3 for code
+  s3_bucket        = aws_s3_bucket.lambda_code_bucket.id
+  s3_key           = aws_s3_object.lambda_package.key
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+
+  # Use the layer for dependencies
+  layers = [aws_lambda_layer_version.dependencies.arn]
+
+  # Add ephemeral storage configuration
+  ephemeral_storage {
+    size = var.lambda_ephemeral_storage
+  }
 
   environment {
     variables = {
@@ -195,21 +259,13 @@ resource "aws_lambda_function" "tccw_knowledge_doc_agent" {
       # S3 bucket configuration
       SOURCE_BUCKET_NAME   = var.source_bucket_name,
       SOURCE_BUCKET_PREFIX = var.source_bucket_prefix,
-      IGNORED_PREFIXES     = join(",", var.ignored_prefixes),
-
-      # Optional variables from Terraform variables
-      COGNITION_CONFIG_DIR  = var.cognition_config_dir,
-      CONFIG_RELOAD_TIMEOUT = var.config_reload_timeout,
-      APP_LOG_LEVEL         = var.app_log_level,
-
-      # S3 bucket configuration
-      SOURCE_BUCKET_NAME   = var.source_bucket_name,
-      SOURCE_BUCKET_PREFIX = var.source_bucket_prefix
+      IGNORED_PREFIXES     = join(",", var.ignored_prefixes)
     }
   }
 
   depends_on = [
-    null_resource.lambda_package,
+    aws_s3_object.lambda_package,
+    aws_lambda_layer_version.dependencies,
     aws_iam_role_policy_attachment.lambda_policy_attachment
   ]
 }

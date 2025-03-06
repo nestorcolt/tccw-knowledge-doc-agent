@@ -130,3 +130,15 @@ variable "ignored_prefixes" {
   type        = list(string)
   default     = [".write/"]
 }
+
+variable "lambda_ephemeral_storage" {
+  description = "Size of the Lambda function ephemeral storage (/tmp) in MB"
+  type        = number
+  default     = 10240 # Maximum value of 10240MB (10GB)
+}
+
+variable "lambda_code_bucket" {
+  description = "S3 bucket to store Lambda deployment package"
+  type        = string
+  default     = "tccw-lambda-deployments"
+}
