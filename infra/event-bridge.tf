@@ -81,7 +81,7 @@ resource "aws_cloudwatch_event_target" "ecs_task" {
     network_configuration {
       subnets          = var.subnet_ids
       security_groups  = [aws_security_group.ecs_sg.id]
-      assign_public_ip = false
+      assign_public_ip = true # TODO: Change to false when we have a NAT gateway
     }
   }
 
