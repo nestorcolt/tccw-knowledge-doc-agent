@@ -54,3 +54,9 @@ output "eventbridge_rule_arn" {
   description = "The ARN of the EventBridge rule"
   value       = aws_cloudwatch_event_rule.lambda_event_rule.arn
 }
+
+# Output the Task Timeout Lambda ARN
+output "task_timeout_lambda_arn" {
+  description = "The ARN of the Task Timeout Lambda function"
+  value       = aws_lambda_function.task_timeout_lambda.arn
+}

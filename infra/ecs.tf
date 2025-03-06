@@ -1,3 +1,6 @@
+# Add this at the top of your ecs.tf file
+data "aws_caller_identity" "current" {}
+
 # ECR Repository for Docker image
 resource "aws_ecr_repository" "tccw_knowledge_doc_agent" {
   name                 = var.ecr_repository_name
@@ -135,7 +138,16 @@ resource "aws_iam_policy" "ecs_execution_policy" {
         ]
         Effect = "Allow"
         Resource = [
-          "arn:aws:secretsmanager:${var.aws_region}:*:secret:TCCW-*"
+          # Use exact ARNs instead of wildcards for better security and to avoid permission issues
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.portkey_api_key_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.portkey_virtual_key_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.long_term_db_password_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.chroma_password_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.anthropic_api_key_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.openai_api_key_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.huggingface_api_token_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.dockerhub_username_secret}*",
+          "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.dockerhub_token_secret}*"
         ]
       }
     ]
@@ -183,22 +195,22 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
       ]
 
       secrets = [
-        # Required variables from Secrets Manager
-        { name = "PORTKEY_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.portkey_api_key_secret}" },
-        { name = "PORTKEY_VIRTUAL_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.portkey_virtual_key_secret}" },
+        # Required variables from Secrets Manager - simplified format
+        { name = "PORTKEY_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_api_key_secret}" },
+        { name = "PORTKEY_VIRTUAL_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_virtual_key_secret}" },
 
         # Optional variables from Secrets Manager
-        { name = "LONG_TERM_DB_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.long_term_db_password_secret}" },
-        { name = "CHROMA_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.chroma_password_secret}" },
+        { name = "LONG_TERM_DB_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.long_term_db_password_secret}" },
+        { name = "CHROMA_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.chroma_password_secret}" },
 
         # API Keys
-        { name = "ANTHROPIC_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.anthropic_api_key_secret}" },
-        { name = "OPENAI_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.openai_api_key_secret}" },
-        { name = "HUGGINGFACE_API_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.huggingface_api_token_secret}" },
+        { name = "ANTHROPIC_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.anthropic_api_key_secret}" },
+        { name = "OPENAI_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_api_key_secret}" },
+        { name = "HUGGINGFACE_API_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.huggingface_api_token_secret}" },
 
         # Docker credentials
-        { name = "DOCKERHUB_USERNAME", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.dockerhub_username_secret}" },
-        { name = "DOCKERHUB_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.dockerhub_token_secret}" }
+        { name = "DOCKERHUB_USERNAME", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_username_secret}" },
+        { name = "DOCKERHUB_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_token_secret}" }
       ]
 
       logConfiguration = {
@@ -207,8 +219,11 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
           "awslogs-group"         = aws_cloudwatch_log_group.ecs_log_group.name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "ecs"
+          "awslogs-create-group"  = "true"
         }
       }
+
+      startTimeout = 120 # Give the container 2 minutes to start up and fetch secrets
     }
   ])
 
@@ -221,10 +236,20 @@ resource "aws_security_group" "ecs_sg" {
   description = "Security group for ECS tasks"
   vpc_id      = var.vpc_id
 
+  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Optional: Add specific rules for HTTPS (port 443) to AWS services
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow HTTPS outbound traffic to AWS services"
   }
 }

@@ -25,7 +25,7 @@ def upload_test_file():
     s3 = boto3.client("s3", region_name=REGION)
 
     # Create a unique filename
-    test_file_key = f"{PREFIX}/test/document_{uuid.uuid4()}.txt"
+    test_file_key = f"{PREFIX}test/document_{uuid.uuid4()}.txt"
 
     print(f"Uploading test file to s3://{SOURCE_BUCKET}/{test_file_key}")
 
