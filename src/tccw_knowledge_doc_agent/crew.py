@@ -1,62 +1,138 @@
-from crewai import Agent, Crew, Process, Task
-from crewai.project import CrewBase, agent, crew, task
+from cognition_core.crew import CognitionCoreCrewBase
+from cognition_core.base import ComponentManager
+from cognition_core.llm import init_portkey_llm
+from cognition_core.agent import CognitionAgent
+from cognition_core.task import CognitionTask
+from cognition_core.crew import CognitionCrew
+from crewai.project import agent, crew, task
+from cognition_core.api import CoreAPIService
+from crewai import Process
+import asyncio
 
-# If you want to run a snippet of code before or after the crew starts, 
-# you can use the @before_kickoff and @after_kickoff decorators
-# https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
 
-@CrewBase
-class TccwKnowledgeDocAgent():
-	"""TccwKnowledgeDocAgent crew"""
+@CognitionCoreCrewBase
+class Cognition(ComponentManager):
+    """Base Cognition implementation - Virtual Interface"""
 
-	# Learn more about YAML configuration files here:
-	# Agents: https://docs.crewai.com/concepts/agents#yaml-configuration-recommended
-	# Tasks: https://docs.crewai.com/concepts/tasks#yaml-configuration-recommended
-	agents_config = 'config/agents.yaml'
-	tasks_config = 'config/tasks.yaml'
+    def __init__(self):
+        # Initialize FastAPI
+        self.api = CoreAPIService()
+        self.app = self.api.get_app()
+        self._setup_routes()
 
-	# If you would like to add tools to your agents, you can learn more about it here:
-	# https://docs.crewai.com/concepts/agents#agent-tools
-	@agent
-	def researcher(self) -> Agent:
-		return Agent(
-			config=self.agents_config['researcher'],
-			verbose=True
-		)
+        # Initialize empty components first
+        self.available_components = {"agents": [], "tasks": []}
 
-	@agent
-	def reporting_analyst(self) -> Agent:
-		return Agent(
-			config=self.agents_config['reporting_analyst'],
-			verbose=True
-		)
+        # Call parent so CrewBase processes @agent/@task decorators
+        super().__init__()
 
-	# To learn more about structured task outputs, 
-	# task dependencies, and task callbacks, check out the documentation:
-	# https://docs.crewai.com/concepts/tasks#overview-of-a-task
-	@task
-	def research_task(self) -> Task:
-		return Task(
-			config=self.tasks_config['research_task'],
-		)
+        # Try deferring the update until an event loop is available
+        try:
+            loop = asyncio.get_running_loop()
+            loop.call_soon(self._update_components)
+        except RuntimeError:
+            # No running loop - update components immediately
+            self._update_components()
 
-	@task
-	def reporting_task(self) -> Task:
-		return Task(
-			config=self.tasks_config['reporting_task'],
-			output_file='report.md'
-		)
+    # Now these methods implement the abstract interface
+    def _update_components(self) -> None:
+        """Implements ComponentManager.update_components"""
+        agents = getattr(self, "agents", [])
+        tasks = getattr(self, "tasks", [])
+        self.available_components = {
+            "agents": [a for a in agents if a.is_available],
+            "tasks": [t for t in tasks if t.is_available],
+        }
 
-	@crew
-	def crew(self) -> Crew:
-		"""Creates the TccwKnowledgeDocAgent crew"""
-		# To learn how to add knowledge sources to your crew, check out the documentation:
-		# https://docs.crewai.com/concepts/knowledge#what-is-knowledge
+    def activate_component(self, component_type: str, name: str) -> bool:
+        """Implements ComponentManager.activate_component"""
+        if component_type in self.available_components:
+            for component in self.available_components[component_type]:
+                if component.name == name:
+                    component.enabled = True
+                    return True
+        return False
 
-		return Crew(
-			agents=self.agents, # Automatically created by the @agent decorator
-			tasks=self.tasks, # Automatically created by the @task decorator
-			process=Process.sequential,
-			verbose=True,
-			# process=Process.hierarchical, # In case you wanna use that instead https://docs.crewai.com/how-to/Hierarchical/
-		)
+    def deactivate_component(self, component_type: str, name: str) -> bool:
+        """Implements ComponentManager.deactivate_component"""
+        if component_type in self.available_components:
+            for component in self.available_components[component_type]:
+                if component.name == name:
+                    component.enabled = False
+                    return True
+        return False
+
+    def get_active_workflow(self) -> dict:
+        """Implements ComponentManager.get_active_workflow"""
+        return {
+            "agents": [a.name for a in self.available_components["agents"]],
+            "tasks": [t.name for t in self.available_components["tasks"]],
+        }
+
+    @agent
+    def manager(self) -> CognitionAgent:
+        """Strategic manager agent"""
+        llm = init_portkey_llm(
+            model=self.agents_config["manager"]["llm"],
+            portkey_config=self.portkey_config,
+        )
+        return self.get_cognition_agent(
+            config=self.agents_config["manager"], llm=llm, allow_delegation=True
+        )
+
+    @agent
+    def analyzer(self) -> CognitionAgent:
+        """Analysis specialist agent"""
+        llm = init_portkey_llm(
+            model=self.agents_config["analyzer"]["llm"],
+            portkey_config=self.portkey_config,
+        )
+        return self.get_cognition_agent(config=self.agents_config["analyzer"], llm=llm)
+
+    @task
+    def analysis_task(self) -> CognitionTask:
+        """Input analysis task"""
+        task_config = self.tasks_config["analysis_task"]
+        return CognitionTask(
+            name="analysis_task",
+            config=task_config,
+            tool_names=self.list_tools(),
+            tool_service=self.tool_service,
+        )
+    @agent
+    def doc_generation_agent(self) -> CognitionAgent:
+        """Analysis specialist agent"""
+        llm = init_portkey_llm(
+            model=self.agents_config["doc_generation_agent"]["llm"],
+            portkey_config=self.portkey_config,
+        )
+        return self.get_cognition_agent(config=self.agents_config["doc_generation_agent"], llm=llm)
+
+    @task
+    def doc_generation_task(self) -> CognitionTask:
+        """Input analysis task"""
+        task_config = self.tasks_config["doc_generation_task"]
+        return CognitionTask(
+            name="doc_generation_task",
+            config=task_config,
+            tool_names=self.list_tools(),
+            tool_service=self.tool_service,
+        )
+    
+    @crew
+    def crew(self) -> CognitionCrew:
+
+        manager = self.manager()
+        agents = [itm for itm in self.agents if itm != manager]
+        # TODO: pass yaml config to crew with my memory service
+        return CognitionCrew(
+            agents=agents,
+            tasks=self.tasks,
+            manager_agent=manager,
+            process=Process.hierarchical,
+            embedder=self.memory_service.embedder,
+            tool_service=self.tool_service,
+            short_term_memory=self.memory_service.get_short_term_memory(),
+            entity_memory=self.memory_service.get_entity_memory(),
+            long_term_memory=self.memory_service.get_long_term_memory(),
+        )

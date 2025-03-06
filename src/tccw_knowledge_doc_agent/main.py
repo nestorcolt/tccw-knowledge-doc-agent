@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-import sys
-import warnings
-
-from datetime import datetime
-
 from tccw_knowledge_doc_agent.crew import TccwKnowledgeDocAgent
+import warnings
+import asyncio
+import sys
+
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -14,16 +13,11 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # interpolate any tasks and agents information
 
 def run():
-    """
-    Run the crew.
-    """
-    inputs = {
-        'topic': 'AI LLMs',
-        'current_year': str(datetime.now().year)
-    }
-    
+
     try:
-        TccwKnowledgeDocAgent().crew().kickoff(inputs=inputs)
+        result = asyncio.run(TccwKnowledgeDocAgent().crew().kickoff_async(inputs={"topic": "AI LLMs"}))
+        return result
+
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
 
