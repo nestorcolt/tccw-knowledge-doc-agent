@@ -146,21 +146,21 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
 
       secrets = [
         # Required variables from Secrets Manager - simplified format
-        { name = "PORTKEY_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_api_key_secret}" },
-        { name = "PORTKEY_VIRTUAL_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_virtual_key_secret}" },
+        { name = "PORTKEY_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_api_key_secret}-*" },
+        { name = "PORTKEY_VIRTUAL_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_virtual_key_secret}-*" },
 
         # Optional variables from Secrets Manager
-        { name = "LONG_TERM_DB_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.long_term_db_password_secret}" },
-        { name = "CHROMA_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.chroma_password_secret}" },
+          { name = "LONG_TERM_DB_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.long_term_db_password_secret}-*" },
+        { name = "CHROMA_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.chroma_password_secret}-*" },
 
         # API Keys
-        { name = "ANTHROPIC_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.anthropic_api_key_secret}" },
-        { name = "OPENAI_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_api_key_secret}" },
-        { name = "HUGGINGFACE_API_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.huggingface_api_token_secret}" },
+        { name = "ANTHROPIC_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.anthropic_api_key_secret}-*" },
+        { name = "OPENAI_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_api_key_secret}-*" },
+        { name = "HUGGINGFACE_API_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.huggingface_api_token_secret}-*" },
 
         # Docker credentials
-        { name = "DOCKERHUB_USERNAME", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_username_secret}" },
-        { name = "DOCKERHUB_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_token_secret}" }
+        { name = "DOCKERHUB_USERNAME", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_username_secret}-*" },
+        { name = "DOCKERHUB_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_token_secret}-*" }
       ]
 
       logConfiguration = {
