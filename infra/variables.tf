@@ -182,13 +182,13 @@ variable "ecs_task_memory" {
 variable "vpc_id" {
   description = "VPC ID for ECS tasks"
   type        = string
-  default     = "vpc-0123456789abcdef0" # Replace with your VPC ID
+  default     = "vpc-0aed058acd6e3328a" # Replace with your VPC ID
 }
 
 variable "subnet_ids" {
   description = "Subnet IDs for ECS tasks"
   type        = list(string)
-  default     = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"] # Replace with your subnet IDs
+  default     = ["subnet-0853cb0854eb070ec", "subnet-046c3c44cf3672673"] # Replace with your subnet IDs
 }
 
 variable "build_docker_image" {
