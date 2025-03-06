@@ -34,12 +34,6 @@ variable "lambda_memory_size" {
   default     = 1024
 }
 
-variable "lambda_handler" {
-  description = "Handler for the Lambda function"
-  type        = string
-  default     = "lambda_function.lambda_handler"
-}
-
 variable "source_bucket_name" {
   description = "Name of the S3 bucket that triggers the Lambda function"
   default     = "tccw-work-pipiline-entry"
@@ -137,12 +131,6 @@ variable "lambda_ephemeral_storage" {
   default     = 10240 # Maximum value of 10240MB (10GB)
 }
 
-variable "lambda_code_bucket" {
-  description = "S3 bucket to store Lambda deployment package"
-  type        = string
-  default     = "tccw-lambda-deployments"
-}
-
 variable "ecr_repository_name" {
   description = "Name of the ECR repository"
   type        = string
@@ -195,4 +183,10 @@ variable "build_docker_image" {
   description = "Whether to build the Docker image during Terraform apply"
   type        = bool
   default     = false
+}
+
+variable "event_bus_name" {
+  description = "Name of the EventBridge event bus"
+  type        = string
+  default     = "default"
 }
