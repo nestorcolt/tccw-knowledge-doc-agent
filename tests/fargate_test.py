@@ -32,25 +32,24 @@ def upload_test_files():
 
     # Create multiple files in the same directory
     file_keys = []
-    for i in range(1, 4):
-        test_file_key = f"{test_dir_path}document_{i}.md"
-        file_keys.append(test_file_key)
+    test_file_key = f"{test_dir_path}document_{uuid.uuid4().hex[:8]}.md"
+    file_keys.append(test_file_key)
 
-        # Add file number to content to make each file unique
-        modified_content = (
-            TEST_CONTENT
-            + f"\n\n## File {i}\nThis is file number {i} in the test directory."
-        )
+    # Add file number to content to make each file unique
+    modified_content = (
+        TEST_CONTENT
+        + f"\n\n## File {i}\nThis is file number {i} in the test directory."
+    )
 
-        print(f"Uploading test file to s3://{SOURCE_BUCKET}/{test_file_key}")
+    print(f"Uploading test file to s3://{SOURCE_BUCKET}/{test_file_key}")
 
-        # Upload the file
-        s3.put_object(
-            Bucket=SOURCE_BUCKET,
-            Key=test_file_key,
-            Body=modified_content,
-            ContentType="text/markdown",
-        )
+    # Upload the file
+    s3.put_object(
+        Bucket=SOURCE_BUCKET,
+        Key=test_file_key,
+        Body=modified_content,
+        ContentType="text/markdown",
+    )
 
     return test_dir_path, file_keys
 
@@ -233,7 +232,7 @@ def check_task_logs(cluster_name, task_arn):
         # Get container details
         for container in task_details["tasks"][0].get("containers", []):
             # Log group is typically /aws/ecs/{task-name}
-            log_group_name = f"/aws/ecs/tccw-knowledge-doc-agent-task"
+            log_group_name = "/aws/ecs/tccw-knowledge-doc-agent-container"
 
             # Log stream typically includes task ID
             log_stream_prefix = f"ecs/{container['name']}/{task_id}"

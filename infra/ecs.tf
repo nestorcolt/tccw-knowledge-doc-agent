@@ -164,6 +164,25 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy_attachment" {
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
   name              = "/aws/ecs/${var.ecs_task_name}"
   retention_in_days = 14
+
+  # Add tags for better organization
+  tags = {
+    Name      = "${var.ecs_task_name}-logs"
+    Service   = "knowledge-doc-agent"
+    ManagedBy = "terraform"
+  }
+}
+
+# Add a specific log group for the container
+resource "aws_cloudwatch_log_group" "container_log_group" {
+  name              = "/aws/ecs/${var.ecs_container_name}"
+  retention_in_days = 14
+
+  tags = {
+    Name      = "${var.ecs_container_name}-logs"
+    Service   = "knowledge-doc-agent"
+    ManagedBy = "terraform"
+  }
 }
 
 # ECS Task Definition
@@ -181,6 +200,15 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
       name      = var.ecs_container_name
       image     = "${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url}:latest"
       essential = true
+
+      # Add health check
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 60
+      }
 
       environment = [
         # Optional variables from Terraform variables
@@ -216,10 +244,12 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs_log_group.name
+          "awslogs-group"         = aws_cloudwatch_log_group.container_log_group.name
           "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
+          "awslogs-stream-prefix" = "ecs/${var.ecs_container_name}"
           "awslogs-create-group"  = "true"
+          "mode"                  = "non-blocking"
+          "max-buffer-size"       = "16m"
         }
       }
 
@@ -252,4 +282,22 @@ resource "aws_security_group" "ecs_sg" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow HTTPS outbound traffic to AWS services"
   }
+}
+
+# Update the test script to check the correct log group
+resource "null_resource" "update_test_script" {
+  triggers = {
+    log_group_name = aws_cloudwatch_log_group.container_log_group.name
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      if [ -f "${path.module}/../tests/fargate_test.py" ]; then
+        sed -i 's|log_group_name = f"/aws/ecs/tccw-knowledge-doc-agent-task"|log_group_name = "${aws_cloudwatch_log_group.container_log_group.name}"|g' ${path.module}/../tests/fargate_test.py
+        echo "Updated log group name in test script to ${aws_cloudwatch_log_group.container_log_group.name}"
+      fi
+    EOT
+  }
+
+  depends_on = [aws_cloudwatch_log_group.container_log_group]
 }
