@@ -1,0 +1,21 @@
+[project]
+name = "tccw_knowledge_doc_agent"
+version = "0.1.0"
+description = "tccw-knowledge-doc-agent using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.13"
+dependencies = ["crewai[tools]>=0.102.0,<1.0.0", "cognition-ai"]
+
+[project.scripts]
+tccw_knowledge_doc_agent = "tccw_knowledge_doc_agent.main:run"
+run_crew = "tccw_knowledge_doc_agent.main:run"
+train = "tccw_knowledge_doc_agent.main:train"
+replay = "tccw_knowledge_doc_agent.main:replay"
+test = "tccw_knowledge_doc_agent.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"

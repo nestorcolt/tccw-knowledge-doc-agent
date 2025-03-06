@@ -1,0 +1,71 @@
+.env
+.venv/
+__pycache__/
+.DS_Store
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.srt
+*.vtt
+*.json
+!config.json
+!package.json
+
+# AWS credentials and config
+.aws/
+aws.credentials
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+.terraform*
+terraform.tfstate
+terraform.tfstate.backup
+*.zip
+.cursor/
