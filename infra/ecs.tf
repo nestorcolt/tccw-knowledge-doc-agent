@@ -107,6 +107,43 @@ resource "aws_cloudwatch_log_group" "container_log_group" {
   }
 }
 
+# Data sources for secrets
+data "aws_secretsmanager_secret" "portkey_api_key" {
+  name = var.portkey_api_key_secret
+}
+
+data "aws_secretsmanager_secret" "portkey_virtual_key" {
+  name = var.portkey_virtual_key_secret
+}
+
+data "aws_secretsmanager_secret" "long_term_db_password" {
+  name = var.long_term_db_password_secret
+}
+
+data "aws_secretsmanager_secret" "chroma_password" {
+  name = var.chroma_password_secret
+}
+
+data "aws_secretsmanager_secret" "anthropic_api_key" {
+  name = var.anthropic_api_key_secret
+}
+
+data "aws_secretsmanager_secret" "openai_api_key" {
+  name = var.openai_api_key_secret
+}
+
+data "aws_secretsmanager_secret" "huggingface_api_token" {
+  name = var.huggingface_api_token_secret
+}
+
+data "aws_secretsmanager_secret" "dockerhub_username" {
+  name = var.dockerhub_username_secret
+}
+
+data "aws_secretsmanager_secret" "dockerhub_token" {
+  name = var.dockerhub_token_secret
+}
+
 # ECS Task Definition
 resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
   family                   = var.ecs_task_name
@@ -145,22 +182,22 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
       ]
 
       secrets = [
-        # Required variables from Secrets Manager - simplified format
-        { name = "PORTKEY_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_api_key_secret}-*" },
-        { name = "PORTKEY_VIRTUAL_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.portkey_virtual_key_secret}-*" },
+        # Required variables from Secrets Manager
+        { name = "PORTKEY_API_KEY", valueFrom = data.aws_secretsmanager_secret.portkey_api_key.arn },
+        { name = "PORTKEY_VIRTUAL_KEY", valueFrom = data.aws_secretsmanager_secret.portkey_virtual_key.arn },
 
         # Optional variables from Secrets Manager
-          { name = "LONG_TERM_DB_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.long_term_db_password_secret}-*" },
-        { name = "CHROMA_PASSWORD", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.chroma_password_secret}-*" },
+        { name = "LONG_TERM_DB_PASSWORD", valueFrom = data.aws_secretsmanager_secret.long_term_db_password.arn },
+        { name = "CHROMA_PASSWORD", valueFrom = data.aws_secretsmanager_secret.chroma_password.arn },
 
         # API Keys
-        { name = "ANTHROPIC_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.anthropic_api_key_secret}-*" },
-        { name = "OPENAI_API_KEY", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_api_key_secret}-*" },
-        { name = "HUGGINGFACE_API_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.huggingface_api_token_secret}-*" },
+        { name = "ANTHROPIC_API_KEY", valueFrom = data.aws_secretsmanager_secret.anthropic_api_key.arn },
+        { name = "OPENAI_API_KEY", valueFrom = data.aws_secretsmanager_secret.openai_api_key.arn },
+        { name = "HUGGINGFACE_API_TOKEN", valueFrom = data.aws_secretsmanager_secret.huggingface_api_token.arn },
 
         # Docker credentials
-        { name = "DOCKERHUB_USERNAME", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_username_secret}-*" },
-        { name = "DOCKERHUB_TOKEN", valueFrom = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_token_secret}-*" }
+        { name = "DOCKERHUB_USERNAME", valueFrom = data.aws_secretsmanager_secret.dockerhub_username.arn },
+        { name = "DOCKERHUB_TOKEN", valueFrom = data.aws_secretsmanager_secret.dockerhub_token.arn }
       ]
 
       logConfiguration = {
