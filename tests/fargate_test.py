@@ -298,7 +298,9 @@ def main():
     event_source = "tccw.knowledge.doc.agent"
     event_detail_type = "S3ObjectCreated"
 
-    # Upload test files to a unique directory
+    # Choose ONE of the following approaches:
+
+    # APPROACH 1: Upload test files to S3 and let the natural event flow trigger the pipeline
     test_dir_path, file_keys = upload_test_files()
     print(f"Test directory created: {test_dir_path}")
     print(f"Test files uploaded: {', '.join(file_keys)}")
@@ -307,9 +309,13 @@ def main():
     print("Waiting for S3 events to propagate (5 seconds)...")
     time.sleep(5)
 
-    # Option 1: Let S3 event trigger Lambda naturally
-    # Option 2: Directly invoke Lambda with simulated event
-    lambda_response = invoke_lambda_directly(lambda_function_name, test_dir_path)
+    # Comment out the direct Lambda invocation
+    # lambda_response = invoke_lambda_directly(lambda_function_name, test_dir_path)
+
+    # OR APPROACH 2: Directly invoke Lambda with simulated event (without uploading real files)
+    # test_dir_path = f"{PREFIX}test_{uuid.uuid4().hex[:8]}/"
+    # print(f"Test directory created: {test_dir_path}")
+    # lambda_response = invoke_lambda_directly(lambda_function_name, test_dir_path)
 
     # Check Lambda logs
     print("Checking Lambda logs...")
