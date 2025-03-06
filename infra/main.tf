@@ -52,5 +52,5 @@ output "source_bucket_name" {
 # Output the EventBridge rule ARN
 output "eventbridge_rule_arn" {
   description = "The ARN of the EventBridge rule"
-  value       = aws_cloudwatch_event_rule.s3_object_created.arn
+  value       = aws_cloudwatch_event_rule.lambda_event_rule.arn
 }
