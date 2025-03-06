@@ -70,3 +70,4 @@ terraform.tfstate.backup
 *.zip
 .cursor/
 bang.sh
+tree.txt

@@ -142,3 +142,51 @@ variable "lambda_code_bucket" {
   type        = string
   default     = "tccw-lambda-deployments"
 }
+
+variable "ecr_repository_name" {
+  description = "Name of the ECR repository"
+  type        = string
+  default     = "tccw-knowledge-doc-agent"
+}
+
+variable "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
+  type        = string
+  default     = "tccw-knowledge-doc-agent-cluster"
+}
+
+variable "ecs_task_name" {
+  description = "Name of the ECS task"
+  type        = string
+  default     = "tccw-knowledge-doc-agent-task"
+}
+
+variable "ecs_container_name" {
+  description = "Name of the container in the ECS task"
+  type        = string
+  default     = "tccw-knowledge-doc-agent-container"
+}
+
+variable "ecs_task_cpu" {
+  description = "CPU units for the ECS task"
+  type        = number
+  default     = 1024
+}
+
+variable "ecs_task_memory" {
+  description = "Memory for the ECS task in MB"
+  type        = number
+  default     = 2048
+}
+
+variable "vpc_id" {
+  description = "VPC ID for ECS tasks"
+  type        = string
+  default     = "vpc-0123456789abcdef0" # Replace with your VPC ID
+}
+
+variable "subnet_ids" {
+  description = "Subnet IDs for ECS tasks"
+  type        = list(string)
+  default     = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"] # Replace with your subnet IDs
+}

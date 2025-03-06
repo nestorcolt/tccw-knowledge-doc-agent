@@ -2,9 +2,9 @@
 name = "tccw_knowledge_doc_agent"
 version = "0.1.0"
 description = "tccw-knowledge-doc-agent using crewAI"
-authors = [{ name = "Your Name", email = "you@example.com" }]
+authors = [{ name = "Nestor Colton", email = "nestor.colt@gmail.com" }]
 requires-python = ">=3.10,<3.13"
-dependencies = ["crewai[tools]>=0.102.0,<1.0.0", "cognition-ai"]
+dependencies = ["crewai[tools]>=0.102.0,<1.0.0", "cognition-ai", "boto3"]
 
 [project.scripts]
 tccw_knowledge_doc_agent = "tccw_knowledge_doc_agent.main:run"
