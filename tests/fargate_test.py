@@ -35,19 +35,13 @@ def upload_test_files():
     test_file_key = f"{test_dir_path}document_{uuid.uuid4().hex[:8]}.md"
     file_keys.append(test_file_key)
 
-    # Add file number to content to make each file unique
-    modified_content = (
-        TEST_CONTENT
-        + f"\n\n## File {i}\nThis is file number {i} in the test directory."
-    )
-
     print(f"Uploading test file to s3://{SOURCE_BUCKET}/{test_file_key}")
 
     # Upload the file
     s3.put_object(
         Bucket=SOURCE_BUCKET,
         Key=test_file_key,
-        Body=modified_content,
+        Body="modified_content",
         ContentType="text/markdown",
     )
 
@@ -146,6 +140,7 @@ def check_eventbridge_events(source, detail_type, minutes=5):
 
     # Calculate start time (minutes ago)
     start_time = datetime.fromtimestamp(time.time() - (minutes * 60))
+    end_time = datetime.now()  # Add end time to fix the time range issue
 
     try:
         # Look up events in CloudTrail
@@ -157,6 +152,7 @@ def check_eventbridge_events(source, detail_type, minutes=5):
                 }
             ],
             StartTime=start_time,
+            EndTime=end_time,  # Add end time parameter
             MaxResults=10,
         )
 
@@ -179,16 +175,31 @@ def check_ecs_tasks(cluster_name, minutes=10):
     """Check ECS tasks that were recently run"""
     ecs = boto3.client("ecs", region_name=REGION)
 
-    # List tasks
+    # List tasks with stopped status as well
     try:
-        response = ecs.list_tasks(cluster=cluster_name, maxResults=10)
+        # First check running tasks
+        running_response = ecs.list_tasks(cluster=cluster_name, maxResults=10)
 
-        if not response.get("taskArns"):
+        # Then check recently stopped tasks
+        stopped_response = ecs.list_tasks(
+            cluster=cluster_name, maxResults=10, desiredStatus="STOPPED"
+        )
+
+        task_arns = running_response.get("taskArns", []) + stopped_response.get(
+            "taskArns", []
+        )
+
+        if not task_arns:
             print(f"No tasks found in cluster {cluster_name}")
+
+            # List all clusters to verify the cluster exists
+            clusters = ecs.list_clusters()
+            print(f"Available clusters: {clusters.get('clusterArns', [])}")
+
             return
 
         # Describe tasks
-        tasks = ecs.describe_tasks(cluster=cluster_name, tasks=response["taskArns"])
+        tasks = ecs.describe_tasks(cluster=cluster_name, tasks=task_arns)
 
         print(f"\n--- ECS Tasks ({cluster_name}) ---")
         for task in tasks["tasks"]:
@@ -202,16 +213,29 @@ def check_ecs_tasks(cluster_name, minutes=10):
                     print(f"Status: {task['lastStatus']}")
                     print(f"Created: {task['createdAt']}")
 
+                    # Show task stopped reason if available
+                    if task.get("stoppedReason"):
+                        print(f"Stopped reason: {task['stoppedReason']}")
+
                     # Get container details
                     for container in task.get("containers", []):
                         print(f"Container: {container['name']}")
                         print(f"Container Status: {container.get('lastStatus')}")
+
+                        # Show container exit code and reason if available
+                        if container.get("exitCode") is not None:
+                            print(f"Exit code: {container.get('exitCode')}")
+                        if container.get("reason"):
+                            print(f"Reason: {container.get('reason')}")
 
                     # Check CloudWatch logs for this task
                     check_task_logs(cluster_name, task["taskArn"])
 
     except Exception as e:
         print(f"Error checking ECS tasks: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
 
 
 def check_task_logs(cluster_name, task_arn):
@@ -295,9 +319,9 @@ def main():
     print("Checking EventBridge events...")
     check_eventbridge_events(event_source, event_detail_type)
 
-    # Wait for ECS task to start
-    print("Waiting for ECS task to start (30 seconds)...")
-    time.sleep(30)
+    # Wait longer for ECS task to start
+    print("Waiting for ECS task to start (60 seconds)...")
+    time.sleep(60)  # Increased wait time
 
     # Check ECS tasks
     print("Checking ECS tasks...")
