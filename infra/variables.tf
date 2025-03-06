@@ -190,3 +190,40 @@ variable "event_bus_name" {
   type        = string
   default     = "default"
 }
+
+# Task Timeout Lambda variables
+variable "task_timeout_lambda_name" {
+  description = "Name of the Task Timeout Lambda function"
+  type        = string
+  default     = "tccw-knowledge-doc-agent-task-timeout"
+}
+
+variable "task_timeout_lambda_description" {
+  description = "Description of the Task Timeout Lambda function"
+  type        = string
+  default     = "Lambda function to terminate long-running ECS tasks"
+}
+
+variable "task_timeout_lambda_timeout" {
+  description = "Timeout for the Task Timeout Lambda function in seconds"
+  type        = number
+  default     = 300
+}
+
+variable "task_timeout_lambda_memory_size" {
+  description = "Memory size for the Task Timeout Lambda function in MB"
+  type        = number
+  default     = 128
+}
+
+variable "task_timeout_minutes" {
+  description = "Maximum allowed runtime for ECS tasks in minutes before termination"
+  type        = number
+  default     = 20
+}
+
+variable "task_timeout_dry_run" {
+  description = "If true, the Lambda will log tasks to terminate but not actually terminate them"
+  type        = string
+  default     = "false"
+}
