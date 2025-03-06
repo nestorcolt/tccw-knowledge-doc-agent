@@ -62,9 +62,36 @@ resource "aws_iam_policy" "secrets_manager_access" {
   })
 }
 
-
 # Attach the custom policy to the execution role
 resource "aws_iam_role_policy_attachment" "secrets_manager_access" {
   role       = aws_iam_role.ecs_execution_role.name
   policy_arn = aws_iam_policy.secrets_manager_access.arn
+}
+
+# Custom policy for ECR access
+resource "aws_iam_policy" "ecr_access" {
+  name        = "${var.ecs_task_name}-ecr-access"
+  description = "Allow ECS tasks to pull images from ECR"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach the ECR policy to the execution role
+resource "aws_iam_role_policy_attachment" "ecr_access" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = aws_iam_policy.ecr_access.arn
 }
