@@ -1,76 +1,10 @@
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+  image_name = "${local.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.ecs_container_name}:latest"
+}
 # Add this at the top of your ecs.tf file
 data "aws_caller_identity" "current" {}
 
-# ECR Repository for Docker image
-resource "aws_ecr_repository" "tccw_knowledge_doc_agent" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
-
-# ECR Lifecycle Policy
-resource "aws_ecr_lifecycle_policy" "tccw_knowledge_doc_agent" {
-  repository = aws_ecr_repository.tccw_knowledge_doc_agent.name
-
-  policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1,
-        description  = "Keep last 3 images with 'latest' tag",
-        selection = {
-          tagStatus      = "tagged",
-          tagPatternList = ["latest"],
-          countType      = "imageCountMoreThan",
-          countNumber    = 3
-        },
-        action = {
-          type = "expire"
-        }
-      },
-      {
-        rulePriority = 2,
-        description  = "Expire untagged images older than 30 days",
-        selection = {
-          tagStatus   = "untagged",
-          countType   = "sinceImagePushed",
-          countUnit   = "days",
-          countNumber = 30
-        },
-        action = {
-          type = "expire"
-        }
-      }
-    ]
-  })
-}
-
-# Null resource to build and push Docker image
-resource "null_resource" "docker_build_push" {
-  count = var.build_docker_image ? 1 : 0
-
-  triggers = {
-    dockerfile_md5   = fileexists("${path.module}/../Dockerfile") ? filemd5("${path.module}/../Dockerfile") : timestamp()
-    entry_script_md5 = fileexists("${path.module}/../entry.py") ? filemd5("${path.module}/../entry.py") : timestamp()
-    pyproject_md5    = fileexists("${path.module}/../pyproject.toml") ? filemd5("${path.module}/../pyproject.toml") : timestamp()
-    build_script_md5 = filemd5("${path.module}/build_and_push.sh")
-    src_code_hash    = sha256(join("", [for f in fileset("${path.module}/../src", "**/*.py") : filemd5("${path.module}/../src/${f}")]))
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      if command -v docker &>/dev/null; then
-        bash ${path.module}/build_and_push.sh ${var.ecr_repository_name} latest ${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url} ${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url}:latest ${var.aws_region} true
-      else
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] Docker not found. Skipping image build and push. You will need to build and push the image manually."
-      fi
-    EOT
-  }
-
-  depends_on = [aws_ecr_repository.tccw_knowledge_doc_agent]
-}
 
 # ECS Cluster
 resource "aws_ecs_cluster" "tccw_knowledge_doc_agent" {
@@ -157,8 +91,17 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
   container_definitions = jsonencode([
     {
       name      = var.ecs_container_name
-      image     = "${aws_ecr_repository.tccw_knowledge_doc_agent.repository_url}:latest"
+      image     = local.image_name
       essential = true
+
+      # Add port mappings to expose port 8080
+      portMappings = [
+        {
+          containerPort = 8080
+          hostPort      = 8080
+          protocol      = "tcp"
+        }
+      ]
 
       # Add health check
       healthCheck = {
@@ -225,6 +168,15 @@ resource "aws_security_group" "ecs_sg" {
   description = "Security group for ECS tasks"
   vpc_id      = var.vpc_id
 
+  # Allow inbound traffic on port 8080
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Consider restricting this to specific IPs or security groups
+    description = "Allow inbound traffic on port 8080"
+  }
+
   # Allow all outbound traffic
   egress {
     from_port   = 0
@@ -243,20 +195,3 @@ resource "aws_security_group" "ecs_sg" {
   }
 }
 
-# Update the test script to check the correct log group
-resource "null_resource" "update_test_script" {
-  triggers = {
-    log_group_name = aws_cloudwatch_log_group.container_log_group.name
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      if [ -f "${path.module}/../tests/fargate_test.py" ]; then
-        sed -i 's|log_group_name = f"/aws/ecs/tccw-knowledge-doc-agent-task"|log_group_name = "${aws_cloudwatch_log_group.container_log_group.name}"|g' ${path.module}/../tests/fargate_test.py
-        echo "Updated log group name in test script to ${aws_cloudwatch_log_group.container_log_group.name}"
-      fi
-    EOT
-  }
-
-  depends_on = [aws_cloudwatch_log_group.container_log_group]
-}

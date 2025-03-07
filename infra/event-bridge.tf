@@ -9,62 +9,7 @@ resource "aws_cloudwatch_event_rule" "lambda_event_rule" {
   })
 }
 
-# IAM role for EventBridge to run ECS tasks
-resource "aws_iam_role" "events_role" {
-  name = "${var.ecs_task_name}-events-role"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "events.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# IAM policy for EventBridge to run ECS tasks
-resource "aws_iam_policy" "events_policy" {
-  name        = "${var.ecs_task_name}-events-policy"
-  description = "IAM policy for EventBridge to run ECS tasks"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "ecs:RunTask"
-        ]
-        Effect   = "Allow"
-        Resource = aws_ecs_task_definition.tccw_knowledge_doc_agent.arn
-      },
-      {
-        Action = [
-          "iam:PassRole"
-        ]
-        Effect = "Allow"
-        Resource = [
-          aws_iam_role.ecs_execution_role.arn
-        ]
-        Condition = {
-          StringLike = {
-            "iam:PassedToService" = "ecs-tasks.amazonaws.com"
-          }
-        }
-      }
-    ]
-  })
-}
-
-# Attach policy to role
-resource "aws_iam_role_policy_attachment" "events_policy_attachment" {
-  role       = aws_iam_role.events_role.name
-  policy_arn = aws_iam_policy.events_policy.arn
-}
 
 # EventBridge Target for ECS Task
 resource "aws_cloudwatch_event_target" "ecs_task" {
