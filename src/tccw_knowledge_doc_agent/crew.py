@@ -18,7 +18,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
         # Initialize FastAPI
         self.api = CoreAPIService()
         self.app = self.api.get_app()
-        self._setup_routes()
 
         # Initialize empty components first
         self.available_components = {"agents": [], "tasks": []}
