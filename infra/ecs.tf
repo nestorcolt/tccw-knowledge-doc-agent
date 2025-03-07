@@ -1,6 +1,7 @@
 locals {
-  account_id = data.aws_caller_identity.current.account_id
-  image_name = "835618032093.dkr.ecr.eu-west-1.amazonaws.com/tccw-knowledge-doc-agent:latest"
+  account_id           = data.aws_caller_identity.current.account_id
+  image_name           = "835618032093.dkr.ecr.eu-west-1.amazonaws.com/tccw-knowledge-doc-agent:latest"
+  private_link_sg_name = "tccw-vpc-endpoint-sg"
 }
 # Add this at the top of your ecs.tf file
 data "aws_caller_identity" "current" {}
@@ -42,6 +43,11 @@ resource "aws_ecs_cluster" "tccw_knowledge_doc_agent" {
   }
 }
 
+# Get the VPC endpoint security group
+data "aws_security_group" "private_link_sg" {
+  name = local.private_link_sg_name
+}
+
 # EventBridge Target for ECS Task
 resource "aws_cloudwatch_event_target" "ecs_task" {
   arn      = aws_ecs_cluster.tccw_knowledge_doc_agent.arn
@@ -57,8 +63,9 @@ resource "aws_cloudwatch_event_target" "ecs_task" {
     enable_execute_command  = true
 
     network_configuration {
-      subnets          = var.public_subnet_ids
-      assign_public_ip = true
+      subnets          = var.private_subnet_ids
+      assign_public_ip = false
+      security_groups  = [data.aws_security_group.private_link_sg.id]
     }
   }
 
