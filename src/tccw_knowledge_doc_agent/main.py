@@ -98,7 +98,7 @@ def run():
     try:
         processed_data = get_processed_content()
         result = asyncio.run(
-            TccwKnowledgeDocAgent().crew().kickoff_async(inputs=processed_data)
+            TccwKnowledgeDocAgent().crew().kickoff_async(inputs={"transcript": processed_data})
         )
         return result
     except Exception as e:
@@ -112,7 +112,7 @@ def train():
     try:
         processed_data = get_processed_content()
         TccwKnowledgeDocAgent().crew().train(
-            n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=processed_data
+            n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs={"transcript": processed_data}
         )
     except Exception as e:
         raise Exception(f"An error occurred while training the crew: {e}")
@@ -137,7 +137,7 @@ def test():
         TccwKnowledgeDocAgent().crew().test(
             n_iterations=int(sys.argv[1]),
             openai_model_name=sys.argv[2],
-            inputs=processed_data,
+            inputs={"transcript": processed_data},
         )
     except Exception as e:
         raise Exception(f"An error occurred while testing the crew: {e}")
