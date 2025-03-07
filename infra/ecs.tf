@@ -5,17 +5,6 @@ locals {
 # Add this at the top of your ecs.tf file
 data "aws_caller_identity" "current" {}
 
-
-# ECS Cluster
-resource "aws_ecs_cluster" "tccw_knowledge_doc_agent" {
-  name = var.ecs_cluster_name
-
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
-  }
-}
-
 # CloudWatch Log Group for ECS
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
   name              = "/aws/ecs/${var.ecs_task_name}"
@@ -41,6 +30,17 @@ resource "aws_cloudwatch_log_group" "container_log_group" {
   }
 }
 
+###############################################################################################
+
+# ECS Cluster
+resource "aws_ecs_cluster" "tccw_knowledge_doc_agent" {
+  name = var.ecs_cluster_name
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+}
 
 # EventBridge Target for ECS Task
 resource "aws_cloudwatch_event_target" "ecs_task" {
@@ -104,7 +104,7 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
 
   container_definitions = jsonencode([
     {
-      name  = var.ecs_task_name
+      name  = var.ecs_container_name
       image = local.image_name
 
       logConfiguration = {
