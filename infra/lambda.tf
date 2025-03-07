@@ -1,7 +1,7 @@
 # CloudWatch Log Group for Lambda
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
   name              = "/aws/lambda/${var.lambda_function_name}"
-  retention_in_days = 14
+  retention_in_days = 60
 }
 
 # Create zip file for Lambda function
@@ -80,7 +80,7 @@ resource "aws_lambda_permission" "allow_bucket" {
 # CloudWatch Log Group for Task Timeout Lambda
 resource "aws_cloudwatch_log_group" "task_timeout_lambda_log_group" {
   name              = "/aws/lambda/${var.task_timeout_lambda_name}"
-  retention_in_days = 14
+  retention_in_days = 60
 }
 
 # Create zip file for Lambda function
