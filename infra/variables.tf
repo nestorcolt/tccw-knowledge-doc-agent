@@ -125,12 +125,6 @@ variable "ignored_prefixes" {
   default     = [".write/"]
 }
 
-variable "lambda_ephemeral_storage" {
-  description = "Size of the Lambda function ephemeral storage (/tmp) in MB"
-  type        = number
-  default     = 10240 # Maximum value of 10240MB (10GB)
-}
-
 variable "ecr_repository_name" {
   description = "Name of the ECR repository"
   type        = string

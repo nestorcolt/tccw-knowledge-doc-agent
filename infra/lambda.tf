@@ -11,6 +11,17 @@ data "archive_file" "lambda_zip" {
   output_path = "${path.module}/lambda_function.zip"
 }
 
+# EventBridge Rule for Lambda events
+resource "aws_cloudwatch_event_rule" "lambda_event_rule" {
+  name        = "${var.ecs_task_name}-lambda-event-rule"
+  description = "Rule to capture events from Lambda function"
+
+  event_pattern = jsonencode({
+    source      = ["tccw.knowledge.doc.agent"]
+    detail-type = ["S3ObjectCreated"]
+  })
+}
+
 # Lambda launch job function
 resource "aws_lambda_function" "launch_job" {
   function_name = var.lambda_function_name
@@ -35,10 +46,6 @@ resource "aws_lambda_function" "launch_job" {
       EVENT_BUS_NAME       = var.event_bus_name
       APP_LOG_LEVEL        = var.app_log_level
     }
-  }
-
-  ephemeral_storage {
-    size = var.lambda_ephemeral_storage
   }
 
   depends_on = [
@@ -75,7 +82,6 @@ resource "aws_cloudwatch_log_group" "task_timeout_lambda_log_group" {
   name              = "/aws/lambda/${var.task_timeout_lambda_name}"
   retention_in_days = 14
 }
-
 
 # Create zip file for Lambda function
 data "archive_file" "task_timeout_lambda_zip" {

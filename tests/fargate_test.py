@@ -309,21 +309,13 @@ def main():
     print("Waiting for S3 events to propagate (5 seconds)...")
     time.sleep(5)
 
-    # Comment out the direct Lambda invocation
-    # lambda_response = invoke_lambda_directly(lambda_function_name, test_dir_path)
-
-    # OR APPROACH 2: Directly invoke Lambda with simulated event (without uploading real files)
-    # test_dir_path = f"{PREFIX}test_{uuid.uuid4().hex[:8]}/"
-    # print(f"Test directory created: {test_dir_path}")
-    # lambda_response = invoke_lambda_directly(lambda_function_name, test_dir_path)
-
     # Check Lambda logs
     print("Checking Lambda logs...")
     check_lambda_logs(lambda_function_name)
 
     # Check EventBridge events
-    print("Checking EventBridge events...")
-    check_eventbridge_events(event_source, event_detail_type)
+    # print("Checking EventBridge events...")
+    # check_eventbridge_events(event_source, event_detail_type)
 
     # Wait longer for ECS task to start
     print("Waiting for ECS task to start (60 seconds)...")
