@@ -85,8 +85,8 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
   network_mode             = "awsvpc"
   cpu                      = var.ecs_task_cpu
   memory                   = var.ecs_task_memory
-  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_execution_role.arn
+  execution_role_arn       = aws_iam_role.ecs_role.arn
+  task_role_arn            = aws_iam_role.ecs_role.arn
 
   container_definitions = jsonencode([
     {
