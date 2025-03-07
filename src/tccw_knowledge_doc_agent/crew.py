@@ -11,7 +11,7 @@ import asyncio
 
 
 @CognitionCoreCrewBase
-class Cognition(ComponentManager):
+class TccwKnowledgeDocAgent(ComponentManager):
     """Base Cognition implementation - Virtual Interface"""
 
     def __init__(self):
@@ -99,6 +99,7 @@ class Cognition(ComponentManager):
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
         )
+
     @agent
     def doc_generation_agent(self) -> CognitionAgent:
         """Analysis specialist agent"""
@@ -106,7 +107,9 @@ class Cognition(ComponentManager):
             model=self.agents_config["doc_generation_agent"]["llm"],
             portkey_config=self.portkey_config,
         )
-        return self.get_cognition_agent(config=self.agents_config["doc_generation_agent"], llm=llm)
+        return self.get_cognition_agent(
+            config=self.agents_config["doc_generation_agent"], llm=llm
+        )
 
     @task
     def doc_generation_task(self) -> CognitionTask:
@@ -118,7 +121,7 @@ class Cognition(ComponentManager):
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
         )
-    
+
     @crew
     def crew(self) -> CognitionCrew:
 
