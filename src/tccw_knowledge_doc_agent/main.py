@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from tccw_knowledge_doc_agent.crew import TccwKnowledgeDocAgent
+from typing import Dict, Any
 import warnings
 import asyncio
-import sys
 import boto3
+import sys
 import os
-from typing import Dict, Any
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -43,7 +43,7 @@ def get_and_merge_objects(bucket: str, prefix: str) -> str:
     print(f"Found {len(object_keys)} objects: {object_keys}")
 
     merged_content = ""
-    
+
     for key in object_keys:
         if key.endswith("/"):
             continue
