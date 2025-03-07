@@ -65,7 +65,7 @@ resource "aws_cloudwatch_event_target" "ecs_task" {
     network_configuration {
       subnets          = var.private_subnet_ids
       assign_public_ip = false
-      security_groups  = [data.aws_security_group.private_link_sg.id]
+      security_groups  = [data.aws_security_group.private_link_sg.id, aws_security_group.ecs_task_sg.id]
     }
   }
 
@@ -126,4 +126,32 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
   ])
 
   depends_on = [null_resource.docker_build_push]
+}
+
+resource "aws_security_group" "ecs_task_sg" {
+  name        = "${var.ecs_task_name}-ecs-task-sg"
+  description = "Security group for ECS tasks"
+  vpc_id      = var.vpc_id
+
+  # Allow inbound traffic from the VPC
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+    description = "Allow app traffic from within VPC"
+  }
+
+  # Allow outbound responses (required for communication)
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow outbound traffic"
+  }
+
+  tags = {
+    Name = "${var.ecs_task_name}-ecs-task-sg"
+  }
 }
