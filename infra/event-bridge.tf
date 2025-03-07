@@ -10,7 +10,6 @@ resource "aws_cloudwatch_event_rule" "lambda_event_rule" {
 }
 
 
-
 # EventBridge Target for ECS Task
 resource "aws_cloudwatch_event_target" "ecs_task" {
   rule      = aws_cloudwatch_event_rule.lambda_event_rule.name
@@ -19,14 +18,16 @@ resource "aws_cloudwatch_event_target" "ecs_task" {
   role_arn  = aws_iam_role.events_role.arn
 
   ecs_target {
+    launch_type         = "FARGATE"
     task_count          = 1
     task_definition_arn = aws_ecs_task_definition.tccw_knowledge_doc_agent.arn
-    launch_type         = "FARGATE"
+
+    enable_ecs_managed_tags = true
+    enable_execute_command  = true
 
     network_configuration {
-      subnets          = var.subnet_ids
-      security_groups  = [aws_security_group.ecs_sg.id]
-      assign_public_ip = true # TODO: Change to false when we have a NAT gateway
+      subnets          = var.public_subnet_ids
+      assign_public_ip = false
     }
   }
 

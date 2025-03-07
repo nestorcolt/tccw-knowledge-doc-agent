@@ -41,42 +41,7 @@ resource "aws_cloudwatch_log_group" "container_log_group" {
   }
 }
 
-# Data sources for secrets
-data "aws_secretsmanager_secret" "portkey_api_key" {
-  name = var.portkey_api_key_secret
-}
 
-data "aws_secretsmanager_secret" "portkey_virtual_key" {
-  name = var.portkey_virtual_key_secret
-}
-
-data "aws_secretsmanager_secret" "long_term_db_password" {
-  name = var.long_term_db_password_secret
-}
-
-data "aws_secretsmanager_secret" "chroma_password" {
-  name = var.chroma_password_secret
-}
-
-data "aws_secretsmanager_secret" "anthropic_api_key" {
-  name = var.anthropic_api_key_secret
-}
-
-data "aws_secretsmanager_secret" "openai_api_key" {
-  name = var.openai_api_key_secret
-}
-
-data "aws_secretsmanager_secret" "huggingface_api_token" {
-  name = var.huggingface_api_token_secret
-}
-
-data "aws_secretsmanager_secret" "dockerhub_username" {
-  name = var.dockerhub_username_secret
-}
-
-data "aws_secretsmanager_secret" "dockerhub_token" {
-  name = var.dockerhub_token_secret
-}
 
 # ECS Task Definition
 resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
@@ -155,43 +120,10 @@ resource "aws_ecs_task_definition" "tccw_knowledge_doc_agent" {
         }
       }
 
-      startTimeout = 120 # Give the container 2 minutes to start up and fetch secrets
+      startTimeout = 30 # Give the container 2 minutes to start up and fetch secrets
     }
   ])
 
   depends_on = [null_resource.docker_build_push]
-}
-
-# Security Group for ECS Tasks
-resource "aws_security_group" "ecs_sg" {
-  name        = "${var.ecs_task_name}-sg"
-  description = "Security group for ECS tasks"
-  vpc_id      = var.vpc_id
-
-  # Allow inbound traffic on port 8080
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Consider restricting this to specific IPs or security groups
-    description = "Allow inbound traffic on port 8080"
-  }
-
-  # Allow all outbound traffic
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Optional: Add specific rules for HTTPS (port 443) to AWS services
-  egress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTPS outbound traffic to AWS services"
-  }
 }
 

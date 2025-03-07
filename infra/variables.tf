@@ -173,7 +173,13 @@ variable "vpc_id" {
   default     = "vpc-0aed058acd6e3328a" # Replace with your VPC ID
 }
 
-variable "subnet_ids" {
+variable "public_subnet_ids" {
+  description = "Subnet IDs for ECS tasks"
+  type        = list(string)
+  default     = ["subnet-08ee7afbabfbbac9c", "subnet-0794a5e45c9fce58c"] # Replace with your subnet IDs
+}
+
+variable "private_subnet_ids" {
   description = "Subnet IDs for ECS tasks"
   type        = list(string)
   default     = ["subnet-0853cb0854eb070ec", "subnet-046c3c44cf3672673"] # Replace with your subnet IDs
