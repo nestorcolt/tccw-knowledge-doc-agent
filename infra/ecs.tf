@@ -1,6 +1,6 @@
 locals {
   account_id = data.aws_caller_identity.current.account_id
-  image_name = "${local.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.ecs_container_name}:latest"
+  image_name = "835618032093.dkr.ecr.eu-west-1.amazonaws.com/tccw-knowledge-doc-agent:latest"
 }
 # Add this at the top of your ecs.tf file
 data "aws_caller_identity" "current" {}

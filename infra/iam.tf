@@ -154,3 +154,122 @@ resource "aws_iam_role_policy_attachment" "events_policy_attachment" {
   role       = aws_iam_role.events_role.name
   policy_arn = aws_iam_policy.events_policy.arn
 }
+
+###############################################################################################
+# IAM Role for Lambda
+resource "aws_iam_role" "lambda_role" {
+  name = "${var.lambda_function_name}-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# IAM Policy for Lambda
+resource "aws_iam_policy" "lambda_policy" {
+  name        = "${var.lambda_function_name}-policy"
+  description = "IAM policy for Lambda function"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Effect = "Allow"
+        Resource = [
+          "arn:aws:s3:::${var.source_bucket_name}",
+          "arn:aws:s3:::${var.source_bucket_name}/*"
+        ]
+      },
+      {
+        Action = [
+          "events:PutEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:events:${var.aws_region}:*:event-bus/${var.event_bus_name}"
+      }
+    ]
+  })
+}
+
+# Attach policy to role
+resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
+}
+
+
+# IAM Role for Task Timeout Lambda
+resource "aws_iam_role" "task_timeout_lambda_role" {
+  name = "${var.task_timeout_lambda_name}-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# IAM Policy for Task Timeout Lambda
+resource "aws_iam_policy" "task_timeout_lambda_policy" {
+  name        = "${var.task_timeout_lambda_name}-policy"
+  description = "IAM policy for Task Timeout Lambda function"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Action = [
+          "ecs:ListTasks",
+          "ecs:DescribeTasks",
+          "ecs:StopTask"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Attach policy to role
+resource "aws_iam_role_policy_attachment" "task_timeout_lambda_policy_attachment" {
+  role       = aws_iam_role.task_timeout_lambda_role.name
+  policy_arn = aws_iam_policy.task_timeout_lambda_policy.arn
+}
