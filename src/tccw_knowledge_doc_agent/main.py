@@ -43,6 +43,7 @@ def get_and_merge_objects(bucket: str, prefix: str) -> str:
     print(f"Found {len(object_keys)} objects: {object_keys}")
 
     merged_content = ""
+    
     for key in object_keys:
         if key.endswith("/"):
             continue
@@ -74,6 +75,7 @@ def get_processed_content() -> Dict[str, Any]:
         return {"topic": "AI LLMs", "content": ""}
 
     path_parts = key.split("/")
+
     if len(path_parts) <= 1:
         container_prefix = ""
     else:
@@ -82,6 +84,7 @@ def get_processed_content() -> Dict[str, Any]:
     merged_content = get_and_merge_objects(bucket, container_prefix)
 
     topic = "Default Topic"
+
     if container_prefix:
         topic = container_prefix.rstrip("/").split("/")[-1].replace("_", " ").title()
 
