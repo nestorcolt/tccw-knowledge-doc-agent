@@ -178,25 +178,27 @@ class TccwKnowledgeDocAgent(ComponentManager):
     @agent
     def manager(self) -> CognitionAgent:
         """Strategic manager agent"""
-        llm = init_portkey_llm(
-            model=self.agents_config["manager"]["llm"],
-            portkey_config=self.portkey_config,
-        )
+        # llm = init_portkey_llm(
+        #     model=self.agents_config["manager"]["llm"],
+        #     portkey_config=self.portkey_config,
+        # )
         return self.get_cognition_agent(
-            config=self.agents_config["manager"], llm=llm, allow_delegation=True
+            config=self.agents_config["manager"],
+            # llm=llm,
+            allow_delegation=True,
         )
 
     @agent
     def analyzer(self) -> CognitionAgent:
         """Analysis specialist agent"""
-        llm = init_portkey_llm(
-            model=self.agents_config["analyzer"]["llm"],
-            portkey_config=self.portkey_config,
-        )
+        # llm = init_portkey_llm(
+        #     model=self.agents_config["analyzer"]["llm"],
+        #     portkey_config=self.portkey_config,
+        # )
         return self.get_cognition_agent(
             config=self.agents_config["analyzer"],
             knowledge_source=[knowledge_source],
-            llm=llm,
+            # llm=llm,
         )
 
     @task
@@ -213,14 +215,14 @@ class TccwKnowledgeDocAgent(ComponentManager):
     @agent
     def doc_generation_agent(self) -> CognitionAgent:
         """Analysis specialist agent"""
-        llm = init_portkey_llm(
-            model=self.agents_config["doc_generation_agent"]["llm"],
-            portkey_config=self.portkey_config,
-        )
+        # llm = init_portkey_llm(
+        #     model=self.agents_config["doc_generation_agent"]["llm"],
+        #     portkey_config=self.portkey_config,
+        # )
         return self.get_cognition_agent(
             config=self.agents_config["doc_generation_agent"],
             knowledge_source=[knowledge_source],
-            llm=llm,
+            # llm=llm,
         )
 
     @task
