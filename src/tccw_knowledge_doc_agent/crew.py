@@ -1,6 +1,7 @@
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from cognition_core.crew import CognitionCoreCrewBase
 from cognition_core.base import ComponentManager
+
 # from cognition_core.llm import init_portkey_llm
 from cognition_core.agent import CognitionAgent
 from cognition_core.task import CognitionTask
@@ -21,14 +22,9 @@ ENVIRONMENT = {
     "S3_EVENT_KEY": os.environ.get("S3_EVENT_KEY", ""),
 }
 
-
 # Initialize S3 client
 s3_client = boto3.client("s3")
-file_writer_tool = FileWriterTool(
-    name="file_writer",
-    description="Write content to a file",
-    directory="home/iamroot/",
-)
+file_writer_tool = FileWriterTool()
 
 
 def get_env(key: str) -> Any:
@@ -111,7 +107,6 @@ def get_processed_content() -> Dict[str, Any]:
 
 # Get processed content
 processed_data = get_processed_content()
-
 knowledge_source = StringKnowledgeSource(
     content="No content available",
     chunk_size=4000,
@@ -222,8 +217,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
         # )
         return self.get_cognition_agent(
             config=self.agents_config["doc_generation_agent"],
-            knowledge_source=[knowledge_source],
-            tools=[file_writer_tool],
             # llm=llm,
         )
 
@@ -233,8 +226,8 @@ class TccwKnowledgeDocAgent(ComponentManager):
         task_config = self.tasks_config["doc_generation_task"]
         return CognitionTask(
             name="doc_generation_task",
-            config=task_config,
             tools=[file_writer_tool],
+            config=task_config,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
         )
