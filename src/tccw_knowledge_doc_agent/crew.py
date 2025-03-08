@@ -24,7 +24,11 @@ ENVIRONMENT = {
 
 # Initialize S3 client
 s3_client = boto3.client("s3")
-file_writer_tool = FileWriterTool()
+file_writer_tool = FileWriterTool(
+    name="file_writer",
+    description="Write content to a file",
+    directory="home/iamroot/",
+)
 
 
 def get_env(key: str) -> Any:
@@ -217,6 +221,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         # )
         return self.get_cognition_agent(
             config=self.agents_config["doc_generation_agent"],
+            tools=[file_writer_tool],
             # llm=llm,
         )
 
@@ -241,8 +246,8 @@ class TccwKnowledgeDocAgent(ComponentManager):
         return CognitionCrew(
             agents=agents,
             tasks=self.tasks,
-            manager_agent=manager,
-            process=Process.hierarchical,
+            # manager_agent=manager,
+            # process=Process.hierarchical,
             verbose=True,
             embedder=self.memory_service.embedder,
             tool_service=self.tool_service,
