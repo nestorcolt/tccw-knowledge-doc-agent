@@ -1,7 +1,7 @@
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from cognition_core.crew import CognitionCoreCrewBase
 from cognition_core.base import ComponentManager
-from cognition_core.llm import init_portkey_llm
+# from cognition_core.llm import init_portkey_llm
 from cognition_core.agent import CognitionAgent
 from cognition_core.task import CognitionTask
 from cognition_core.crew import CognitionCrew
