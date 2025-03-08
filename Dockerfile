@@ -40,5 +40,5 @@ ENTRYPOINT ["sh", "-c", "\
     aws secretsmanager get-secret-value --secret-id $GITHUB_PEM_SECRET_ID --query SecretString --output text > /root/.ssh/id_rsa && \
     chmod 600 /root/.ssh/id_rsa && \
     { python -m tccw_knowledge_doc_agent.main || echo 'Main module failed with exit code $?'; } && \
-    echo 'Container sleeping for 5 hours for testing...' && \
-    sleep 18000"]
+    echo 'Container sleeping for 30 MINS for testing...' && \
+    sleep 1800"]
