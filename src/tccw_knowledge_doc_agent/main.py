@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from tccw_knowledge_doc_agent.crew import TccwKnowledgeDocAgent
+from tccw_knowledge_doc_agent.crew import TccwKnowledgeDocAgent, processed_data
 import warnings
 import asyncio
 import sys
@@ -15,9 +15,7 @@ def run():
         result = asyncio.run(
             TccwKnowledgeDocAgent()
             .crew()
-            .kickoff_async(
-                inputs={"notes_subject": TccwKnowledgeDocAgent.processed_data["topic"]}
-            )
+            .kickoff_async(inputs={"notes_subject": processed_data["topic"]})
         )
         return result
     except Exception as e:
@@ -32,7 +30,7 @@ def train():
         TccwKnowledgeDocAgent().crew().train(
             n_iterations=int(sys.argv[1]),
             filename=sys.argv[2],
-            inputs={"notes_subject": TccwKnowledgeDocAgent.processed_data["topic"]},
+            inputs={"notes_subject": processed_data["topic"]},
         )
     except Exception as e:
         raise Exception(f"An error occurred while training the crew: {e}")
@@ -56,7 +54,7 @@ def test():
         TccwKnowledgeDocAgent().crew().test(
             n_iterations=int(sys.argv[1]),
             openai_model_name=sys.argv[2],
-            inputs={"notes_subject": TccwKnowledgeDocAgent.processed_data["topic"]},
+            inputs={"notes_subject": processed_data["topic"]},
         )
     except Exception as e:
         raise Exception(f"An error occurred while testing the crew: {e}")
