@@ -53,11 +53,11 @@ class TccwKnowledgeDocAgent(ComponentManager):
             self._update_components()
 
             # Get processed content
-        processed_data = self.get_processed_content()
+        self.processed_data = self.get_processed_content()
 
         # Create a knowledge source from the content
         self.knowledge_source = StringKnowledgeSource(
-            content=processed_data["content"],
+            content=self.processed_data["content"],
             chunk_size=20000,  # Maximum size of each chunk (default: 4000)
             chunk_overlap=2000,  # Overlap between chunks (default: 200)
         )
