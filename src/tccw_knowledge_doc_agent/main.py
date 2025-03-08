@@ -18,7 +18,7 @@ def run():
             .kickoff_async(
                 inputs={
                     "notes_subject": processed_data["topic"],
-                    "notes_content": processed_data["content"],
+                    "transcription": processed_data["content"],
                 }
             )
         )
@@ -37,7 +37,7 @@ def train():
             filename=sys.argv[2],
             inputs={
                 "notes_subject": processed_data["topic"],
-                "notes_content": processed_data["content"],
+                "transcription": processed_data["content"],
             },
         )
     except Exception as e:
@@ -64,7 +64,7 @@ def test():
             openai_model_name=sys.argv[2],
             inputs={
                 "notes_subject": processed_data["topic"],
-                "notes_content": processed_data["content"],
+                "transcription": processed_data["content"],
             },
         )
     except Exception as e:
