@@ -27,6 +27,7 @@ s3_client = boto3.client("s3")
 file_writer_tool = FileWriterTool(
     name="file_writer",
     description="Write content to a file",
+    directory="home/iamroot/",
 )
 
 
@@ -222,6 +223,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         return self.get_cognition_agent(
             config=self.agents_config["doc_generation_agent"],
             knowledge_source=[knowledge_source],
+            tools=[file_writer_tool],
             # llm=llm,
         )
 
@@ -232,6 +234,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         return CognitionTask(
             name="doc_generation_task",
             config=task_config,
+            tools=[file_writer_tool],
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
         )
@@ -253,5 +256,4 @@ class TccwKnowledgeDocAgent(ComponentManager):
             short_term_memory=self.memory_service.get_short_term_memory(),
             entity_memory=self.memory_service.get_entity_memory(),
             long_term_memory=self.memory_service.get_long_term_memory(),
-            knowledge_source=[knowledge_source],
         )
