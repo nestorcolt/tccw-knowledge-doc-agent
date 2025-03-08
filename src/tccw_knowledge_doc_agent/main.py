@@ -6,6 +6,7 @@ import asyncio
 import boto3
 import sys
 import os
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -96,9 +97,12 @@ def run():
     Run the crew with content from S3 if available, otherwise use default
     """
     try:
-        processed_data = get_processed_content()
         result = asyncio.run(
-            TccwKnowledgeDocAgent().crew().kickoff_async(inputs={"transcript": processed_data})
+            TccwKnowledgeDocAgent()
+            .crew()
+            .kickoff_async(
+                inputs={"transcript": TccwKnowledgeDocAgent.get_processed_content()}
+            )
         )
         return result
     except Exception as e:
@@ -110,9 +114,10 @@ def train():
     Train the crew for a given number of iterations.
     """
     try:
-        processed_data = get_processed_content()
         TccwKnowledgeDocAgent().crew().train(
-            n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs={"transcript": processed_data}
+            n_iterations=int(sys.argv[1]),
+            filename=sys.argv[2],
+            inputs={"transcript": TccwKnowledgeDocAgent.get_processed_content()},
         )
     except Exception as e:
         raise Exception(f"An error occurred while training the crew: {e}")
@@ -133,11 +138,10 @@ def test():
     Test the crew execution and returns the results.
     """
     try:
-        processed_data = get_processed_content()
         TccwKnowledgeDocAgent().crew().test(
             n_iterations=int(sys.argv[1]),
             openai_model_name=sys.argv[2],
-            inputs={"transcript": processed_data},
+            inputs={"transcript": TccwKnowledgeDocAgent.get_processed_content()},
         )
     except Exception as e:
         raise Exception(f"An error occurred while testing the crew: {e}")

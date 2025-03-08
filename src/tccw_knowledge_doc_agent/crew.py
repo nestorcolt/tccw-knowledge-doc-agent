@@ -1,3 +1,4 @@
+from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from cognition_core.crew import CognitionCoreCrewBase
 from cognition_core.base import ComponentManager
 from cognition_core.llm import init_portkey_llm
@@ -6,13 +7,31 @@ from cognition_core.task import CognitionTask
 from cognition_core.crew import CognitionCrew
 from crewai.project import agent, crew, task
 from cognition_core.api import CoreAPIService
+from crewai_tools import FileWriterTool
+from typing import Dict, Any
 from crewai import Process
 import asyncio
+import boto3
+import os
 
+# Initialize S3 client
+s3_client = boto3.client("s3")
+
+file_writer_tool = FileWriterTool(
+    name="file_writer",
+    description="Write content to a file",
+    file_path="output.txt",
+)
 
 @CognitionCoreCrewBase
 class TccwKnowledgeDocAgent(ComponentManager):
     """Base Cognition implementation - Virtual Interface"""
+
+    # Environment variables configuration
+    ENVIRONMENT = {
+        "S3_EVENT_BUCKET": os.environ.get("S3_EVENT_BUCKET", ""),
+        "S3_EVENT_KEY": os.environ.get("S3_EVENT_KEY", ""),
+    }
 
     def __init__(self):
         # Initialize FastAPI
@@ -32,6 +51,92 @@ class TccwKnowledgeDocAgent(ComponentManager):
         except RuntimeError:
             # No running loop - update components immediately
             self._update_components()
+
+            # Get processed content
+        processed_data = self.get_processed_content()
+
+        # Create a knowledge source from the content
+        self.knowledge_source = StringKnowledgeSource(
+            content=processed_data["content"],
+            chunk_size=20000,  # Maximum size of each chunk (default: 4000)
+            chunk_overlap=2000,  # Overlap between chunks (default: 200)
+        )
+
+    @staticmethod
+    def get_env(key: str) -> Any:
+        """Get environment variable value"""
+        return TccwKnowledgeDocAgent.ENVIRONMENT.get(key)
+
+    @staticmethod
+    def get_and_merge_objects(bucket: str, prefix: str) -> str:
+        """
+        Fetches all objects from the given prefix in the bucket and merges their content.
+        """
+        print(f"Fetching all objects from bucket {bucket} with prefix {prefix}")
+
+        if not prefix.endswith("/"):
+            prefix = prefix + "/"
+
+        response = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+
+        if "Contents" not in response:
+            print(f"No objects found in {bucket}/{prefix}")
+            return ""
+
+        object_keys = [obj["Key"] for obj in response["Contents"]]
+        print(f"Found {len(object_keys)} objects: {object_keys}")
+
+        merged_content = ""
+
+        for key in object_keys:
+            if key.endswith("/"):
+                continue
+
+            print(f"Getting content of {key}")
+            obj = s3_client.get_object(Bucket=bucket, Key=key)
+            content = obj["Body"].read().decode("utf-8")
+
+            if merged_content:
+                merged_content += "\n\n--- New File ---\n\n"
+
+            merged_content += f"File: {key}\n{content}"
+
+        print(f"Total merged content size: {len(merged_content)} characters")
+        return merged_content
+
+    @staticmethod
+    def get_processed_content() -> Dict[str, Any]:
+        """
+        Process document from S3 and return content and topic
+        """
+        bucket = TccwKnowledgeDocAgent.get_env("S3_EVENT_BUCKET")
+        key = TccwKnowledgeDocAgent.get_env("S3_EVENT_KEY")
+
+        if not bucket or not key:
+            print(
+                "Error: S3_EVENT_BUCKET and S3_EVENT_KEY environment variables must be set"
+            )
+            return {"topic": "AI LLMs", "content": ""}
+
+        path_parts = key.split("/")
+
+        if len(path_parts) <= 1:
+            container_prefix = ""
+        else:
+            container_prefix = "/".join(path_parts[:-1]) + "/"
+
+        merged_content = TccwKnowledgeDocAgent.get_and_merge_objects(
+            bucket, container_prefix
+        )
+
+        topic = "Default Topic"
+
+        if container_prefix:
+            topic = (
+                container_prefix.rstrip("/").split("/")[-1].replace("_", " ").title()
+            )
+
+        return {"topic": topic, "content": merged_content}
 
     # Now these methods implement the abstract interface
     def _update_components(self) -> None:
@@ -86,7 +191,11 @@ class TccwKnowledgeDocAgent(ComponentManager):
             model=self.agents_config["analyzer"]["llm"],
             portkey_config=self.portkey_config,
         )
-        return self.get_cognition_agent(config=self.agents_config["analyzer"], llm=llm)
+        return self.get_cognition_agent(
+            config=self.agents_config["analyzer"],
+            llm=llm,
+            knowledge_sources=[self.knowledge_source],
+        )
 
     @task
     def analysis_task(self) -> CognitionTask:
@@ -107,7 +216,10 @@ class TccwKnowledgeDocAgent(ComponentManager):
             portkey_config=self.portkey_config,
         )
         return self.get_cognition_agent(
-            config=self.agents_config["doc_generation_agent"], llm=llm
+            config=self.agents_config["doc_generation_agent"],
+            llm=llm,
+            knowledge_sources=[self.knowledge_source],
+            tools=[file_writer_tool],
         )
 
     @task
@@ -126,7 +238,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
 
         manager = self.manager()
         agents = [itm for itm in self.agents if itm != manager]
-        # TODO: pass yaml config to crew with my memory service
+
         return CognitionCrew(
             agents=agents,
             tasks=self.tasks,
