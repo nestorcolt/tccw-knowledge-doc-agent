@@ -1,54 +1,166 @@
-# TccwKnowledgeDocAgent Crew
+# TCCW Knowledge Document Agent
 
-Welcome to the TccwKnowledgeDocAgent Crew project, powered by [crewAI](https://crewai.com). This template is designed to help you set up a multi-agent AI system with ease, leveraging the powerful and flexible framework provided by crewAI. Our goal is to enable your agents to collaborate effectively on complex tasks, maximizing their collective intelligence and capabilities.
+A sophisticated AI-powered document analysis and knowledge extraction system built with crewAI and AWS integration. This system processes documents stored in S3, analyzes their content, and generates comprehensive documentation using a team of specialized AI agents.
+
+## Architecture
+
+```mermaid
+graph TD
+    subgraph AWS
+        S3[S3 Bucket] --> |Document Storage| ECR[ECR Repository]
+        SM[Secrets Manager] --> |SSH Keys| ECR
+    end
+
+    subgraph DocAgent[TCCW Knowledge Doc Agent]
+        MA[Manager Agent] --> AN[Analyzer Agent]
+        MA --> DG[Doc Generation Agent]
+        AN --> |Analysis Results| DG
+        KS[Knowledge Source] --> AN
+    end
+
+    subgraph Tools
+        FW[File Writer Tool]
+        CT[Custom Tools]
+    end
+
+    S3 --> |Input Documents| DocAgent
+    DocAgent --> |Generated Docs| Output[Output Documents]
+    Tools --> DocAgent
+
+```
+
+## Features
+
+- **Multi-Agent System**: Utilizes specialized AI agents for different tasks:
+  - Manager Agent: Orchestrates the workflow
+  - Analyzer Agent: Processes and analyzes documents
+  - Doc Generation Agent: Creates comprehensive documentation
+- **AWS Integration**: 
+  - S3 bucket integration for document storage
+  - ECR for container deployment
+  - Secrets Manager for secure credential management
+- **Containerized Deployment**: Docker-based deployment for scalability and consistency
+- **Flexible Tool System**: Extensible tool architecture for custom functionality
+
+## Prerequisites
+
+- Python >=3.11, <3.13
+- Docker
+- AWS CLI v2
+- Access to AWS services (S3, ECR, Secrets Manager)
 
 ## Installation
 
-Ensure you have Python >=3.10 <3.13 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd tccw-knowledge-doc-agent
+```
 
-First, if you haven't already, install uv:
-
+2. Install dependencies using UV (recommended):
 ```bash
 pip install uv
+uv pip install -e .
 ```
 
-Next, navigate to your project directory and install the dependencies:
-
-(Optional) Lock the dependencies and install them by using the CLI command:
+3. Set up environment variables:
 ```bash
-crewai install
+export GITHUB_PEM_SECRET_ID="your-secret-id"
+export S3_EVENT_BUCKET="your-bucket"
+export S3_EVENT_KEY="your-key"
 ```
-### Customizing
 
-**Add your `OPENAI_API_KEY` into the `.env` file**
+## Configuration
 
-- Modify `src/tccw_knowledge_doc_agent/config/agents.yaml` to define your agents
-- Modify `src/tccw_knowledge_doc_agent/config/tasks.yaml` to define your tasks
-- Modify `src/tccw_knowledge_doc_agent/crew.py` to add your own logic, tools and specific args
-- Modify `src/tccw_knowledge_doc_agent/main.py` to add custom inputs for your agents and tasks
+1. AWS Credentials:
+   - Ensure AWS credentials are properly configured
+   - Set up necessary IAM roles and permissions
 
-## Running the Project
+2. Environment Variables:
+   - Create a `.env` file based on the provided template
+   - Configure all required AWS service endpoints
 
-To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
+## Usage
 
+### Local Development
+
+1. Run the agent locally:
 ```bash
-$ crewai run
+python -m tccw_knowledge_doc_agent.main
 ```
 
-This command initializes the tccw-knowledge-doc-agent Crew, assembling the agents and assigning them tasks as defined in your configuration.
+2. Training mode:
+```bash
+python -m tccw_knowledge_doc_agent.main train <iterations> <filename>
+```
 
-This example, unmodified, will run the create a `report.md` file with the output of a research on LLMs in the root folder.
+3. Test mode:
+```bash
+python -m tccw_knowledge_doc_agent.main test <iterations> <model_name>
+```
 
-## Understanding Your Crew
+### Docker Deployment
 
-The tccw-knowledge-doc-agent Crew is composed of multiple AI agents, each with unique roles, goals, and tools. These agents collaborate on a series of tasks, defined in `config/tasks.yaml`, leveraging their collective skills to achieve complex objectives. The `config/agents.yaml` file outlines the capabilities and configurations of each agent in your crew.
+1. Build and push to ECR:
+```bash
+./docker.sh <task-name> <tag> <ecr-url> <ecr-full-url> <region> true
+```
+
+2. Run container:
+```bash
+docker run -e AWS_ACCESS_KEY_ID=<key> \
+           -e AWS_SECRET_ACCESS_KEY=<secret> \
+           -e S3_EVENT_BUCKET=<bucket> \
+           -e S3_EVENT_KEY=<key> \
+           <ecr-full-url>
+```
+
+## Development
+
+### Project Structure
+```
+tccw-knowledge-doc-agent/
+├── src/
+│   └── tccw_knowledge_doc_agent/
+│       ├── crew.py          # Core agent implementation
+│       ├── main.py          # Entry point
+│       └── tools/           # Custom tools
+├── knowledge/              # Knowledge base
+└── docker/                # Docker configuration
+```
+
+### Adding Custom Tools
+
+1. Create a new tool in `src/tccw_knowledge_doc_agent/tools/`
+2. Inherit from `BaseTool`
+3. Define input schema and implementation
+4. Register in the crew configuration
+
+## CI/CD
+
+- GitHub Actions workflow for automated builds
+- Automated ECR push on main branch updates
+- Build validation on pull requests
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+[License Type] - See LICENSE file for details
+
+## Author
+
+Nestor Colt (nestor.colt@gmail.com)
 
 ## Support
 
-For support, questions, or feedback regarding the TccwKnowledgeDocAgent Crew or crewAI.
-- Visit our [documentation](https://docs.crewai.com)
-- Reach out to us through our [GitHub repository](https://github.com/joaomdmoura/crewai)
-- [Join our Discord](https://discord.com/invite/X4JWnZnxPb)
-- [Chat with our docs](https://chatg.pt/DWjSBZn)
-
-Let's create wonders together with the power and simplicity of crewAI.
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Refer to the documentation
