@@ -18,7 +18,7 @@ on:
 
 env:
   TASK_NAME: tccw-knowledge-doc-agent-task
-  TASK_TAG: latest
+  IMAGE_TAG: latest
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
 
@@ -43,12 +43,8 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set ECR variables
-        run: |
-          echo "ECR_URL=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-          echo "ECR_FULL_URL=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.TASK_TAG }}" >> $GITHUB_ENV
-
       - name: Build and push Docker image
         run: |
-          chmod +x ./docker.sh
-          ./docker.sh ${{ env.TASK_NAME }} ${{ env.TASK_TAG }} ${{ env.ECR_URL }} ${{ env.ECR_FULL_URL }} ${{ env.AWS_REGION }} ${{ github.event.inputs.build || 'true' }} 
+          docker build -t ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
+          docker push ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          echo "Image pushed to ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}" 
