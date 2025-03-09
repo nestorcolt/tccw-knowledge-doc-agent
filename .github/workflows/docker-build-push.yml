@@ -17,7 +17,7 @@ on:
           - 'false'
 
 env:
-  TASK_NAME: terrastate
+  TASK_NAME: tccw-knowledge-doc-agent-task
   TASK_TAG: latest
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
