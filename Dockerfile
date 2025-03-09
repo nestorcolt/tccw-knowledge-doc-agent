@@ -25,6 +25,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Set environment variables
 ENV GITHUB_PEM_SECRET_ID=""
+ENV ENV_FILE_SECRET_ID=""
 ENV PYTHONUNBUFFERED=1
 ENV S3_EVENT_BUCKET=""
 ENV S3_EVENT_KEY=""
@@ -38,6 +39,7 @@ RUN mkdir -p /root/.ssh && \
 # Set entrypoint to fetch SSH key from AWS Secrets Manager, run the main module, and then sleep
 ENTRYPOINT ["sh", "-c", "\
     aws secretsmanager get-secret-value --secret-id $GITHUB_PEM_SECRET_ID --query SecretString --output text > /root/.ssh/id_rsa && \
+    aws secretsmanager get-secret-value --secret-id $ENV_FILE_SECRET_ID --query SecretString --output text > /root/.env && \
     chmod 600 /root/.ssh/id_rsa && \
     { python -m tccw_knowledge_doc_agent.main || echo 'Main module failed with exit code $?'; } && \
     echo 'Container sleeping for 30 MINS for testing...' && \
