@@ -24,6 +24,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e .
 
 # Set environment variables
+ENV AGENT_TASKS_TABLE_NAME=""
+ENV AGENT_CONTAINER_NAME=""
 ENV GITHUB_PEM_SECRET_ID=""
 ENV ENV_FILE_SECRET_ID=""
 ENV PYTHONUNBUFFERED=1
