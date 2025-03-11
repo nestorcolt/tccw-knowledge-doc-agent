@@ -31,7 +31,9 @@ file_writer_tool = FileWriterTool(
 )
 
 composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
-create_page_tool = composio_toolset.get_tools(actions=["CONFLUENCE_CREATE_PAGE"])
+composio_tools = composio_toolset.get_tools(
+    actions=["CONFLUENCE_CREATE_PAGE", "CONFLUENCE_GET_CHILD_PAGES"]
+)
 
 
 def get_env(key: str) -> Any:
@@ -249,7 +251,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         # )
         return self.get_cognition_agent(
             config=self.agents_config["confluence_agent"],
-            tools=[create_page_tool],
+            tools=[composio_tools],
             # llm=llm,
         )
 
@@ -259,7 +261,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         task_config = self.tasks_config["confluence_task"]
         return CognitionTask(
             name="confluence_task",
-            tools=[create_page_tool],
+            tools=[composio_tools],
             config=task_config,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
@@ -274,8 +276,8 @@ class TccwKnowledgeDocAgent(ComponentManager):
         return CognitionCrew(
             agents=agents,
             tasks=self.tasks,
-            # manager_agent=manager,
-            # process=Process.hierarchical,
+            manager_agent=manager,
+            process=Process.hierarchical,
             verbose=True,
             embedder=self.memory_service.embedder,
             tool_service=self.tool_service,
