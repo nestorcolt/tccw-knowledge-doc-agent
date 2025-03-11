@@ -1,8 +1,8 @@
 from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
+from composio_crewai import ComposioToolSet, App, Action
 from cognition_core.crew import CognitionCoreCrewBase
 from cognition_core.base import ComponentManager
-
-# from cognition_core.llm import init_portkey_llm
+from cognition_core.llm import init_portkey_llm
 from cognition_core.agent import CognitionAgent
 from cognition_core.task import CognitionTask
 from cognition_core.crew import CognitionCrew
@@ -29,6 +29,9 @@ file_writer_tool = FileWriterTool(
     description="Write content to a file",
     directory="home/iamroot/",
 )
+
+composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
+create_page_tool = composio_toolset.get_tools(actions=["CONFLUENCE_CREATE_PAGE"])
 
 
 def get_env(key: str) -> Any:
@@ -232,6 +235,31 @@ class TccwKnowledgeDocAgent(ComponentManager):
         return CognitionTask(
             name="doc_generation_task",
             tools=[file_writer_tool],
+            config=task_config,
+            tool_names=self.list_tools(),
+            tool_service=self.tool_service,
+        )
+
+    @agent
+    def confluence_agent(self) -> CognitionAgent:
+        """Analysis specialist agent"""
+        # llm = init_portkey_llm(
+        #     model=self.agents_config["doc_generation_agent"]["llm"],
+        #     portkey_config=self.portkey_config,
+        # )
+        return self.get_cognition_agent(
+            config=self.agents_config["confluence_agent"],
+            tools=[create_page_tool],
+            # llm=llm,
+        )
+
+    @task
+    def confluence_task(self) -> CognitionTask:
+        """Input analysis task"""
+        task_config = self.tasks_config["confluence_task"]
+        return CognitionTask(
+            name="confluence_task",
+            tools=[create_page_tool],
             config=task_config,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,

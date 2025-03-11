@@ -5,7 +5,7 @@ description = "tccw-knowledge-doc-agent using crewAI"
 requires-python = ">=3.11,<3.13"
 
 authors = [{ name = "Nestor Colt", email = "nestor.colt@gmail.com" }]
-dependencies = ["cognition-ai", "boto3"]
+dependencies = ["cognition-ai", "boto3", "composio-crewai"]
 
 [project.scripts]
 tccw_knowledge_doc_agent = "tccw_knowledge_doc_agent.main:run"
