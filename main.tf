@@ -9,9 +9,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "tccw-europe-infra-bucket"
-    key            = "terraform/ai-agent/knowledge-base.tfstate"
-    region         = "eu-west-1"
+    bucket = "tccw-europe-infra-bucket"
+    key    = "terraform/ai-agent/knowledge-base.tfstate"
+    region = "eu-west-1"
   }
 }
 
@@ -23,8 +23,9 @@ module "ai_agent" {
   source = "git::https://github.com/nestorcolt/tccw-ecs-task-builder.git"
 
   # Core configuration
-  aws_region = "eu-west-1"
-  task_name  = "tccw-knowledge-base-agent"
+  aws_region   = "eu-west-1"
+  cluster_name = "tccw-agentic-pipeline-cluster"
+  task_name    = "tccw-knowledge-base-agent"
 
   # Task configuration
   task_register_table_name = "tccw-agent-tasks"
@@ -53,8 +54,7 @@ module "ai_agent" {
   healthcheck_start_period = 60
 
   # Infrastructure configuration
-  iam_role_name          = "ai-agent-role"
-  cpu_architecture       = "X86_64"
+  cpu_architecture       = "arm64"
   ephemeral_storage_size = 21
 
   # ECR image lifecycle configuration
