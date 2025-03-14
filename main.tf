@@ -24,10 +24,10 @@ module "ai_agent" {
 
   # Core configuration
   aws_region = "eu-west-1"
-  task_name  = "my-ai-agent"
+  task_name  = "tccw-knowledge-base-agent"
 
   # Task configuration
-  task_register_table_name = "ai-agent-registry"
+  task_register_table_name = "tccw-agent-tasks"
   task_timeout_seconds     = 3600
   task_memory_mb           = 1024
   task_cpu_units           = 1024
