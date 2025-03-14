@@ -1,6 +1,6 @@
 # TCCW Knowledge Document Agent
 
-A sophisticated AI-powered document analysis and knowledge extraction system built with crewAI and AWS integration. This system processes documents stored in S3, analyzes their content, and generates comprehensive documentation using a team of specialized AI agents.
+A sophisticated AI-powered document analysis and knowledge extraction system now featuring Confluence integration for automated page creation. This system processes documents stored in S3, analyzes their content, and generates comprehensive documentation using a team of specialized AI agents.
 
 ## Architecture
 
@@ -14,31 +14,34 @@ graph TD
     subgraph DocAgent[TCCW Knowledge Doc Agent]
         MA[Manager Agent] --> AN[Analyzer Agent]
         MA --> DG[Doc Generation Agent]
-        AN --> |Analysis Results| DG
+        MA --> CA[Confluence Agent]
+        AN --> DG
         KS[Knowledge Source] --> AN
     end
 
     subgraph Tools
         FW[File Writer Tool]
-        CT[Custom Tools]
+        CT[Composio Tools]
     end
 
     S3 --> |Input Documents| DocAgent
-    DocAgent --> |Generated Docs| Output[Output Documents]
+    DG --> |Generated Docs| Output[Output Documents]
+    CA --> |Page Creation| Output
     Tools --> DocAgent
 
 ```
 
 ## Features
 
-- **Multi-Agent System**: Utilizes specialized AI agents for different tasks:
+- **Multi-Agent System**: Specialized agents for document analysis:
   - Manager Agent: Orchestrates the workflow
-  - Analyzer Agent: Processes and analyzes documents
-  - Doc Generation Agent: Creates comprehensive documentation
+  - Analyzer Agent: Processes document content
+  - Doc Generation Agent: Creates documentation
+  - **Confluence Agent**: Automates Confluence page creation
 - **AWS Integration**: 
-  - S3 bucket integration for document storage
+  - S3 bucket storage
   - ECR for container deployment
-  - Secrets Manager for secure credential management
+  - Secrets Manager for secure credentials
 - **Containerized Deployment**: Docker-based deployment for scalability and consistency
 - **Flexible Tool System**: Extensible tool architecture for custom functionality
 
@@ -57,18 +60,13 @@ git clone <repository-url>
 cd tccw-knowledge-doc-agent
 ```
 
-2. Install dependencies using UV (recommended):
+2. Install dependencies (recommended):
 ```bash
-pip install uv
-uv pip install -e .
+pip install --editable .
 ```
 
 3. Set up environment variables:
-```bash
-export GITHUB_PEM_SECRET_ID="your-secret-id"
-export S3_EVENT_BUCKET="your-bucket"
-export S3_EVENT_KEY="your-key"
-```
+   - Create a `.env` file in your home directory (e.g., ~/.env) based on the provided template.
 
 ## Configuration
 
