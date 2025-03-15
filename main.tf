@@ -62,6 +62,7 @@ module "ai_agent" {
   ephemeral_storage_size = 21
 
   # ECR image lifecycle configuration
+  dockerfile_path                = "${path.module}/Dockerfile"
   latest_tag_retention_count     = 5
   versioned_tag_retention_count  = 10
   versioned_tag_prefixes         = ["v", "release", "dev"]
