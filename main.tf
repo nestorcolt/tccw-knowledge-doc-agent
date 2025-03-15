@@ -23,15 +23,19 @@ module "ai_agent" {
   source = "git::https://github.com/nestorcolt/tccw-ecs-task-builder.git"
 
   # Core configuration
-  aws_region   = "eu-west-1"
-  cluster_name = "tccw-agentic-pipeline-cluster"
-  task_name    = "tccw-knowledge-base-agent"
+  aws_region       = "eu-west-1"
+  ecs_cluster_name = "tccw-agentic-pipeline-cluster"
+  task_name        = "tccw-knowledge-base-agent"
+
+  #  Event source configuration
+  sqs_event_trigger_arn = "arn:aws:sqs:eu-west-1:835618032093:tccw-knowledge-base-queue"
 
   # Task configuration
   task_register_table_name = "tccw-agent-tasks"
   task_timeout_seconds     = 3600
   task_memory_mb           = 1024
   task_cpu_units           = 1024
+
   task_environment_variables = {
     MODEL_NAME  = "gpt-4"
     MAX_TOKENS  = "8192"
