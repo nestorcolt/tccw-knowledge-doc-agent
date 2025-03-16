@@ -42,9 +42,6 @@ module "ai_agent" {
     TEMPERATURE = "0.7"
     LOG_LEVEL   = "INFO"
   }
-  task_secrets = {
-    API_KEY = "arn:aws:secretsmanager:us-west-2:123456789012:secret:ai-platform/api-key"
-  }
 
   # Container configuration
   container_port     = 8080
