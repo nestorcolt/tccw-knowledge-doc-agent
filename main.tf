@@ -55,7 +55,7 @@ module "ai_agent" {
   healthcheck_start_period = 60
 
   # Infrastructure configuration
-  cpu_architecture       = "ARM64"
+  cpu_architecture       = "X86_64"
   ephemeral_storage_size = 21
 
   # ECR image lifecycle configuration
