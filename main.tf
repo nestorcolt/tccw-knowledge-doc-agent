@@ -26,6 +26,7 @@ module "ai_agent" {
   aws_region       = "eu-west-1"
   ecs_cluster_name = "tccw-agentic-pipeline-cluster"
   task_name        = "tccw-knowledge-base-agent"
+  debug_mode       = false
 
   #  Event source configuration
   sqs_event_trigger_arn = "arn:aws:sqs:eu-west-1:835618032093:tccw-knowledge-base-queue"
@@ -37,10 +38,9 @@ module "ai_agent" {
   task_cpu_units           = 1024
 
   task_environment_variables = {
-    MODEL_NAME  = "gpt-4"
-    MAX_TOKENS  = "8192"
-    TEMPERATURE = "0.7"
-    LOG_LEVEL   = "INFO"
+    ENV_FILE_SECRET_ID   = "tccw-agent-env-variables"
+    GITHUB_PEM_SECRET_ID = "TCCW-GITHUB-PEM"
+    APP_LOG_LEVEL        = "DEBUG"
   }
 
   # Container configuration

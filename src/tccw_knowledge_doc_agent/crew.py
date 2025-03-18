@@ -18,8 +18,8 @@ import os
 
 # Environment variables configuration
 ENVIRONMENT = {
-    "S3_EVENT_BUCKET": os.environ.get("S3_EVENT_BUCKET", ""),
-    "S3_EVENT_KEY": os.environ.get("S3_EVENT_KEY", ""),
+    "S3_BUCKET_NAME": os.environ.get("S3_BUCKET_NAME", ""),
+    "S3_OBJECT_KEY": os.environ.get("S3_OBJECT_KEY", ""),
 }
 
 # Initialize S3 client
@@ -83,12 +83,12 @@ def get_processed_content() -> Dict[str, Any]:
     Process document from S3 and return content and topic
     """
     try:
-        bucket = get_env("S3_EVENT_BUCKET")
-        key = get_env("S3_EVENT_KEY")
+        bucket = get_env("S3_BUCKET_NAME")
+        key = get_env("S3_OBJECT_KEY")
 
         if not bucket or not key:
             print(
-                "Error: S3_EVENT_BUCKET and S3_EVENT_KEY environment variables must be set"
+                "Error: S3_BUCKET_NAME and S3_OBJECT_KEY environment variables must be set"
             )
             return {"topic": "AI LLMs", "content": "No content available"}
 

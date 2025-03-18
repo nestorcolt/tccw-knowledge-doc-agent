@@ -27,11 +27,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 ENV AGENT_TASKS_TABLE_NAME=""
 ENV GITHUB_PEM_SECRET_ID=""
 ENV ENV_FILE_SECRET_ID=""
-ENV REPOSITORY_NAME=""
 ENV PYTHONUNBUFFERED=1
-ENV S3_EVENT_BUCKET=""
-ENV S3_EVENT_KEY=""
+ENV S3_BUCKET_NAME=""
+ENV S3_OBJECT_KEY=""
 ENV PYTHONPATH=/app
+ENV TASK_ID=""
 
 # Create SSH directory
 RUN mkdir -p /root/.ssh && \
@@ -44,8 +44,8 @@ ENTRYPOINT ["sh", "-c", "\
     aws secretsmanager get-secret-value --secret-id $ENV_FILE_SECRET_ID --query SecretString --output text > /root/.env && \
     chmod 600 /root/.ssh/id_rsa && \
     DEBUG_MODE=false && \
-    aws dynamodb get-item --table-name $AGENT_TASKS_TABLE_NAME --key '{\"repository_name\":{\"S\":\"'$REPOSITORY_NAME'\"}}' > /app/config.json 2>/dev/null || echo '{\"Item\":{}}' > /app/config.json && \
-    if grep -q '\"debug\":{\"BOOL\":true}' /app/config.json; then \
+    aws dynamodb get-item --table-name $AGENT_TASKS_TABLE_NAME --key '{\"task_id\":{\"S\":\"'$TASK_ID'\"}}' > /app/config.json 2>/dev/null || echo '{\"Item\":{}}' > /app/config.json && \
+    if grep -q '\"debug_mode\":{\"BOOL\":true}' /app/config.json; then \
     DEBUG_MODE=true; \
     echo 'Debug mode enabled from DynamoDB configuration'; \
     else \

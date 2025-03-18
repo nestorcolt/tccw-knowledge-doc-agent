@@ -108,8 +108,8 @@ python -m tccw_knowledge_doc_agent.main test <iterations> <model_name>
 ```bash
 docker run -e AWS_ACCESS_KEY_ID=<key> \
            -e AWS_SECRET_ACCESS_KEY=<secret> \
-           -e S3_EVENT_BUCKET=<bucket> \
-           -e S3_EVENT_KEY=<key> \
+           -e S3_BUCKET_NAME=<bucket> \
+           -e S3_OBJECT_KEY=<key> \
            <ecr-full-url>
 ```
 
