@@ -38,9 +38,11 @@ module "ai_agent" {
   task_cpu_units           = 1024
 
   task_environment_variables = {
-    ENV_FILE_SECRET_ID   = "tccw-agent-env-variables"
-    GITHUB_PEM_SECRET_ID = "TCCW-GITHUB-PEM"
-    APP_LOG_LEVEL        = "DEBUG"
+    COGNITION_CONFIG_SOURCE = "https://github.com/nestorcolt/cognition-config.git"
+    COGNITION_CONFIG_DIR    = "~/.cognition/tccw-knowledge-doc-agent/config"
+    ENV_FILE_SECRET_ID      = "tccw-agent-env-variables"
+    GITHUB_PEM_SECRET_ID    = "TCCW-GITHUB-PEM"
+    APP_LOG_LEVEL           = "DEBUG"
   }
 
   # Container configuration
@@ -64,5 +66,5 @@ module "ai_agent" {
   versioned_tag_retention_count  = 10
   versioned_tag_prefixes         = ["v", "release", "dev"]
   untagged_image_expiration_days = 7
-  force_build                    = true
+  force_build                    = false
 }
