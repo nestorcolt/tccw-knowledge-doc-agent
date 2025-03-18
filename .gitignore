@@ -71,3 +71,4 @@ terraform.tfstate.backup
 .cursor/
 bang.sh
 tree.txt
+.composio.*
