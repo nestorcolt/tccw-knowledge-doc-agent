@@ -251,7 +251,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         # )
         return self.get_cognition_agent(
             config=self.agents_config["confluence_agent"],
-            tools=[composio_tools],
+            tools=composio_tools,
             # llm=llm,
         )
 
@@ -261,7 +261,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         task_config = self.tasks_config["confluence_task"]
         return CognitionTask(
             name="confluence_task",
-            tools=[composio_tools],
+            tools=composio_tools,
             config=task_config,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
