@@ -30,7 +30,10 @@ file_writer_tool = FileWriterTool(
     directory="home/iamroot/",
 )
 
-composio_toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
+composio_toolset = ComposioToolSet(
+    api_key=os.getenv("COMPOSIO_API_KEY"),
+    entity_id=os.getenv("COMPOSIO_CONFLUENCE_ENTITY_ID"),
+)
 composio_tools = composio_toolset.get_tools(
     actions=["CONFLUENCE_CREATE_PAGE", "CONFLUENCE_GET_CHILD_PAGES"]
 )
