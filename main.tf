@@ -38,7 +38,7 @@ module "ai_agent" {
   task_cpu_units           = 1024
 
   task_environment_variables = {
-    COGNITION_CONFIG_SOURCE = "https://github.com/nestorcolt/cognition-config.git"
+    COGNITION_CONFIG_SOURCE = "git@github.com:nestorcolt/cognition-config.git"
     COGNITION_CONFIG_DIR    = "~/.cognition/tccw-knowledge-doc-agent/config"
     ENV_FILE_SECRET_ID      = "tccw-agent-env-variables"
     GITHUB_PEM_SECRET_ID    = "TCCW-GITHUB-PEM"

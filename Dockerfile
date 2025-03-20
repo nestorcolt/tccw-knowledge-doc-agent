@@ -34,15 +34,15 @@ ENV PYTHONPATH=/app
 ENV TASK_ID=""
 
 # Create SSH directory
-RUN mkdir -p /root/.ssh && \
-    ssh-keyscan bitbucket.org >> /root/.ssh/known_hosts && \
-    ssh-keyscan github.com >> /root/.ssh/known_hosts
+RUN mkdir -p /root/.ssh
+RUN touch /root/.ssh/id_rsa 
+RUN chmod 600 /root/.ssh/id_rsa \
+    && ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 # Set entrypoint to fetch SSH key from AWS Secrets Manager, run the main module, and then sleep
 ENTRYPOINT ["sh", "-c", "\
     aws secretsmanager get-secret-value --secret-id $GITHUB_PEM_SECRET_ID --query SecretString --output text > /root/.ssh/id_rsa && \
     aws secretsmanager get-secret-value --secret-id $ENV_FILE_SECRET_ID --query SecretString --output text > /root/.env && \
-    chmod 600 /root/.ssh/id_rsa && \
     DEBUG_MODE=false && \
     aws dynamodb get-item --table-name $AGENT_TASKS_TABLE_NAME --key '{\"task_id\":{\"S\":\"'$TASK_ID'\"}}' > /app/config.json 2>/dev/null || echo '{\"Item\":{}}' > /app/config.json && \
     if grep -q '\"debug_mode\":{\"BOOL\":true}' /app/config.json; then \
