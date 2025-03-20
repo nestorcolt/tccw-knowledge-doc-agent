@@ -1,4 +1,3 @@
-from crewai.knowledge.source.string_knowledge_source import StringKnowledgeSource
 from composio_crewai import ComposioToolSet, App, Action
 from cognition_core.crew import CognitionCoreCrewBase
 from cognition_core.base import ComponentManager
@@ -27,7 +26,6 @@ s3_client = boto3.client("s3")
 file_writer_tool = FileWriterTool(
     name="file_writer",
     description="Write content to a file",
-    directory="home/iamroot/",
 )
 
 composio_toolset = ComposioToolSet(
@@ -117,15 +115,6 @@ def get_processed_content() -> Dict[str, Any]:
         return {"topic": "Error", "content": "Error processing content"}
 
 
-# Get processed content
-processed_data = get_processed_content()
-knowledge_source = StringKnowledgeSource(
-    content="No content available",
-    chunk_size=4000,
-    chunk_overlap=200,
-)
-
-
 @CognitionCoreCrewBase
 class TccwKnowledgeDocAgent(ComponentManager):
     """Base Cognition implementation - Virtual Interface"""
@@ -205,7 +194,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
         # )
         return self.get_cognition_agent(
             config=self.agents_config["analyzer"],
-            knowledge_source=[knowledge_source],
             # llm=llm,
         )
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-from tccw_knowledge_doc_agent.crew import TccwKnowledgeDocAgent, processed_data
+from tccw_knowledge_doc_agent.crew import TccwKnowledgeDocAgent, get_processed_content
 import warnings
 import asyncio
 import sys
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
+processed_data = get_processed_content()
 
 
 def run():
