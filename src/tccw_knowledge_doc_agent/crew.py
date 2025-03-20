@@ -36,6 +36,9 @@ composio_tools = composio_toolset.get_tools(
     actions=["CONFLUENCE_CREATE_PAGE", "CONFLUENCE_GET_CHILD_PAGES"]
 )
 
+print(os.getenv("COMPOSIO_API_KEY"))
+print(os.getenv("COMPOSIO_CONFLUENCE_ENTITY_ID"))
+
 
 def get_env(key: str) -> Any:
     """Get environment variable value"""
@@ -173,19 +176,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
         }
 
     @agent
-    def manager(self) -> CognitionAgent:
-        """Strategic manager agent"""
-        # llm = init_portkey_llm(
-        #     model=self.agents_config["manager"]["llm"],
-        #     portkey_config=self.portkey_config,
-        # )
-        return self.get_cognition_agent(
-            config=self.agents_config["manager"],
-            # llm=llm,
-            allow_delegation=True,
-        )
-
-    @agent
     def analyzer(self) -> CognitionAgent:
         """Analysis specialist agent"""
         # llm = init_portkey_llm(
@@ -252,7 +242,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
         task_config = self.tasks_config["confluence_task"]
         return CognitionTask(
             name="confluence_task",
-            tools=composio_tools,
             config=task_config,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
@@ -261,14 +250,9 @@ class TccwKnowledgeDocAgent(ComponentManager):
     @crew
     def crew(self) -> CognitionCrew:
 
-        manager = self.manager()
-        agents = [itm for itm in self.agents if itm != manager]
-
         return CognitionCrew(
-            agents=agents,
+            agents=self.agents,
             tasks=self.tasks,
-            manager_agent=manager,
-            process=Process.hierarchical,
             verbose=True,
             embedder=self.memory_service.embedder,
             tool_service=self.tool_service,
