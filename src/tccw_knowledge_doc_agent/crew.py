@@ -25,11 +25,11 @@ ENVIRONMENT = {
 s3_client = boto3.client("s3")
 file_writer_tool = FileWriterTool(
     name="file_writer",
-    description="Write content to a markdown file in /var/tmp/",
+    description="Write content to a markdown file",
 )
 file_read_tool = FileReadTool(
     name="file_reader",
-    description="Read content from a markdown file in /var/tmp/",
+    description="Read content from a markdown file",
 )
 
 composio_toolset = ComposioToolSet(
@@ -110,15 +110,11 @@ def get_processed_content() -> Dict[str, Any]:
             container_prefix = "/".join(path_parts[:-1]) + "/"
 
         merged_content = get_and_merge_objects(bucket, container_prefix)
+        return {
+            "topic": path_parts[-1],
+            "content": merged_content or "No content available",
+        }
 
-        topic = "Default Topic"
-
-        if container_prefix:
-            topic = (
-                container_prefix.rstrip("/").split("/")[-1].replace("_", " ").title()
-            )
-
-        return {"topic": topic, "content": merged_content or "No content available"}
     except Exception as e:
         print(f"Error in get_processed_content: {e}")
         return {"topic": "Error", "content": "Error processing content"}
