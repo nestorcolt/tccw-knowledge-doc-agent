@@ -27,6 +27,10 @@ file_writer_tool = FileWriterTool(
     name="file_writer",
     description="Write content to a markdown file",
 )
+file_read_tool = FileReadTool(
+    name="file_reader",
+    description="Read content from a markdown file",
+)
 
 composio_toolset = ComposioToolSet(
     api_key=os.getenv("COMPOSIO_API_KEY"),
@@ -36,6 +40,7 @@ composio_tools = composio_toolset.get_tools(
     actions=["CONFLUENCE_GET_CHILD_PAGES", "CONFLUENCE_CREATE_PAGE"]
 )
 
+composio_tools.append(file_read_tool)
 
 def get_env(key: str) -> Any:
     """Get environment variable value"""
