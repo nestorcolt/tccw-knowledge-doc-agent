@@ -1,5 +1,6 @@
 from composio_crewai import ComposioToolSet, App, Action
 from cognition_core.crew import CognitionCoreCrewBase
+from crewai_tools import FileWriterTool, FileReadTool
 from cognition_core.base import ComponentManager
 from cognition_core.llm import init_portkey_llm
 from cognition_core.agent import CognitionAgent
@@ -7,7 +8,6 @@ from cognition_core.task import CognitionTask
 from cognition_core.crew import CognitionCrew
 from crewai.project import agent, crew, task
 from cognition_core.api import CoreAPIService
-from crewai_tools import FileWriterTool
 from typing import Dict, Any
 from crewai import Process
 import asyncio
@@ -25,7 +25,11 @@ ENVIRONMENT = {
 s3_client = boto3.client("s3")
 file_writer_tool = FileWriterTool(
     name="file_writer",
-    description="Write content to a file",
+    description="Write content to a markdown file in /var/tmp/",
+)
+file_read_tool = FileReadTool(
+    name="file_reader",
+    description="Read content from a markdown file in /var/tmp/",
 )
 
 composio_toolset = ComposioToolSet(
@@ -35,6 +39,8 @@ composio_toolset = ComposioToolSet(
 composio_tools = composio_toolset.get_tools(
     actions=["CONFLUENCE_CREATE_PAGE", "CONFLUENCE_GET_CHILD_PAGES"]
 )
+
+composio_tools.append(file_read_tool)
 
 print(os.getenv("COMPOSIO_API_KEY"))
 print(os.getenv("COMPOSIO_CONFLUENCE_ENTITY_ID"))
@@ -176,29 +182,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
         }
 
     @agent
-    def analyzer(self) -> CognitionAgent:
-        """Analysis specialist agent"""
-        # llm = init_portkey_llm(
-        #     model=self.agents_config["analyzer"]["llm"],
-        #     portkey_config=self.portkey_config,
-        # )
-        return self.get_cognition_agent(
-            config=self.agents_config["analyzer"],
-            # llm=llm,
-        )
-
-    @task
-    def analysis_task(self) -> CognitionTask:
-        """Input analysis task"""
-        task_config = self.tasks_config["analysis_task"]
-        return CognitionTask(
-            name="analysis_task",
-            config=task_config,
-            tool_names=self.list_tools(),
-            tool_service=self.tool_service,
-        )
-
-    @agent
     def doc_generation_agent(self) -> CognitionAgent:
         """Analysis specialist agent"""
         # llm = init_portkey_llm(
@@ -206,7 +189,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         #     portkey_config=self.portkey_config,
         # )
         return self.get_cognition_agent(
-            config=self.agents_config["doc_generation_agent"],
+            config=self.agents_config["document_generator_agent"],
             tools=[file_writer_tool],
             # llm=llm,
         )
@@ -214,7 +197,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
     @task
     def doc_generation_task(self) -> CognitionTask:
         """Input analysis task"""
-        task_config = self.tasks_config["doc_generation_task"]
+        task_config = self.tasks_config["document_generation_task"]
         return CognitionTask(
             name="doc_generation_task",
             tools=[file_writer_tool],
@@ -239,7 +222,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
     @task
     def confluence_task(self) -> CognitionTask:
         """Input analysis task"""
-        task_config = self.tasks_config["confluence_task"]
+        task_config = self.tasks_config["confluence_publishing_task"]
         return CognitionTask(
             name="confluence_task",
             config=task_config,
