@@ -27,23 +27,14 @@ file_writer_tool = FileWriterTool(
     name="file_writer",
     description="Write content to a markdown file",
 )
-file_read_tool = FileReadTool(
-    name="file_reader",
-    description="Read content from a markdown file",
-)
 
 composio_toolset = ComposioToolSet(
     api_key=os.getenv("COMPOSIO_API_KEY"),
     entity_id=os.getenv("COMPOSIO_CONFLUENCE_ENTITY_ID"),
 )
 composio_tools = composio_toolset.get_tools(
-    actions=["CONFLUENCE_CREATE_PAGE", "CONFLUENCE_GET_CHILD_PAGES"]
+    actions=["CONFLUENCE_GET_CHILD_PAGES", "CONFLUENCE_CREATE_PAGE"]
 )
-
-composio_tools.append(file_read_tool)
-
-print(os.getenv("COMPOSIO_API_KEY"))
-print(os.getenv("COMPOSIO_CONFLUENCE_ENTITY_ID"))
 
 
 def get_env(key: str) -> Any:
@@ -222,8 +213,10 @@ class TccwKnowledgeDocAgent(ComponentManager):
         return CognitionTask(
             name="confluence_publishing_task",
             config=task_config,
+            tools=composio_tools,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
+            context=[task_config],
         )
 
     @crew
