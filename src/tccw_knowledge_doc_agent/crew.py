@@ -216,7 +216,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
             tools=composio_tools,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
-            context=[task_config],
         )
 
     @crew
