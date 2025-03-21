@@ -182,7 +182,7 @@ class TccwKnowledgeDocAgent(ComponentManager):
         }
 
     @agent
-    def doc_generation_agent(self) -> CognitionAgent:
+    def document_generator_agent(self) -> CognitionAgent:
         """Analysis specialist agent"""
         # llm = init_portkey_llm(
         #     model=self.agents_config["doc_generation_agent"]["llm"],
@@ -195,11 +195,11 @@ class TccwKnowledgeDocAgent(ComponentManager):
         )
 
     @task
-    def doc_generation_task(self) -> CognitionTask:
+    def document_generation_task(self) -> CognitionTask:
         """Input analysis task"""
         task_config = self.tasks_config["document_generation_task"]
         return CognitionTask(
-            name="doc_generation_task",
+            name="document_generation_task",
             tools=[file_writer_tool],
             config=task_config,
             tool_names=self.list_tools(),
@@ -220,11 +220,11 @@ class TccwKnowledgeDocAgent(ComponentManager):
         )
 
     @task
-    def confluence_task(self) -> CognitionTask:
+    def confluence_publishing_task(self) -> CognitionTask:
         """Input analysis task"""
         task_config = self.tasks_config["confluence_publishing_task"]
         return CognitionTask(
-            name="confluence_task",
+            name="confluence_publishing_task",
             config=task_config,
             tool_names=self.list_tools(),
             tool_service=self.tool_service,
