@@ -1,15 +1,13 @@
-from composio_crewai import ComposioToolSet, App, Action
-from cognition_core.crew import CognitionCoreCrewBase
 from crewai_tools import FileWriterTool, FileReadTool
+from cognition_core.crew import CognitionCoreCrewBase
 from cognition_core.base import ComponentManager
-from cognition_core.llm import init_portkey_llm
 from cognition_core.agent import CognitionAgent
-from cognition_core.task import CognitionTask
-from cognition_core.crew import CognitionCrew
-from crewai.project import agent, crew, task
 from cognition_core.api import CoreAPIService
+from cognition_core.crew import CognitionCrew
+from cognition_core.task import CognitionTask
+from crewai.project import agent, crew, task
+from composio_crewai import ComposioToolSet
 from typing import Dict, Any
-from crewai import Process
 import asyncio
 import boto3
 import os
@@ -41,6 +39,7 @@ composio_tools = composio_toolset.get_tools(
 )
 
 composio_tools.append(file_read_tool)
+
 
 def get_env(key: str) -> Any:
     """Get environment variable value"""
@@ -117,78 +116,21 @@ def get_processed_content() -> Dict[str, Any]:
 
 
 @CognitionCoreCrewBase
-class TccwKnowledgeDocAgent(ComponentManager):
+class TccwKnowledgeDocAgent:
     """Base Cognition implementation - Virtual Interface"""
 
-    def __init__(self):
-        # Initialize FastAPI
-        self.api = CoreAPIService()
-        self.app = self.api.get_app()
-
-        # Initialize empty components first
-        self.available_components = {"agents": [], "tasks": []}
-
-        # Call parent so CrewBase processes @agent/@task decorators
+    def __init__(self) -> None:
         super().__init__()
-        # Try deferring the update until an event loop is available
-        try:
-            loop = asyncio.get_running_loop()
-            loop.call_soon(self._update_components)
-        except RuntimeError:
-            # No running loop - update components immediately
-            self._update_components()
-
-    # Now these methods implement the abstract interface
-    def _update_components(self) -> None:
-        """Implements ComponentManager.update_components"""
-        agents = getattr(self, "agents", [])
-        tasks = getattr(self, "tasks", [])
-        self.available_components = {
-            "agents": [a for a in agents if a.is_available],
-            "tasks": [t for t in tasks if t.is_available],
-        }
-
-    def activate_component(self, component_type: str, name: str) -> bool:
-        """Implements ComponentManager.activate_component"""
-        if component_type in self.available_components:
-            for component in self.available_components[component_type]:
-                if component.name == name:
-                    component.enabled = True
-                    return True
-        return False
-
-    def deactivate_component(self, component_type: str, name: str) -> bool:
-        """Implements ComponentManager.deactivate_component"""
-        if component_type in self.available_components:
-            for component in self.available_components[component_type]:
-                if component.name == name:
-                    component.enabled = False
-                    return True
-        return False
-
-    def get_active_workflow(self) -> dict:
-        """Implements ComponentManager.get_active_workflow"""
-        return {
-            "agents": [a.name for a in self.available_components["agents"]],
-            "tasks": [t.name for t in self.available_components["tasks"]],
-        }
 
     @agent
     def document_generator_agent(self) -> CognitionAgent:
-        """Analysis specialist agent"""
-        # llm = init_portkey_llm(
-        #     model=self.agents_config["doc_generation_agent"]["llm"],
-        #     portkey_config=self.portkey_config,
-        # )
         return self.get_cognition_agent(
             config=self.agents_config["document_generator_agent"],
             tools=[file_writer_tool],
-            # llm=llm,
         )
 
     @task
     def document_generation_task(self) -> CognitionTask:
-        """Input analysis task"""
         task_config = self.tasks_config["document_generation_task"]
         return CognitionTask(
             name="document_generation_task",
@@ -200,15 +142,8 @@ class TccwKnowledgeDocAgent(ComponentManager):
 
     @agent
     def confluence_agent(self) -> CognitionAgent:
-        """Analysis specialist agent"""
-        # llm = init_portkey_llm(
-        #     model=self.agents_config["doc_generation_agent"]["llm"],
-        #     portkey_config=self.portkey_config,
-        # )
         return self.get_cognition_agent(
-            config=self.agents_config["confluence_agent"],
-            tools=composio_tools,
-            # llm=llm,
+            config=self.agents_config["confluence_agent"], tools=composio_tools
         )
 
     @task
@@ -225,7 +160,6 @@ class TccwKnowledgeDocAgent(ComponentManager):
 
     @crew
     def crew(self) -> CognitionCrew:
-
         return CognitionCrew(
             agents=self.agents,
             tasks=self.tasks,
