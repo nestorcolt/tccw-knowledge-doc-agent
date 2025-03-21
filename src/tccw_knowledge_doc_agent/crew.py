@@ -1,14 +1,11 @@
 from crewai_tools import FileWriterTool, FileReadTool
 from cognition_core.crew import CognitionCoreCrewBase
-from cognition_core.base import ComponentManager
 from cognition_core.agent import CognitionAgent
-from cognition_core.api import CoreAPIService
 from cognition_core.crew import CognitionCrew
 from cognition_core.task import CognitionTask
 from crewai.project import agent, crew, task
 from composio_crewai import ComposioToolSet
 from typing import Dict, Any
-import asyncio
 import boto3
 import os
 
