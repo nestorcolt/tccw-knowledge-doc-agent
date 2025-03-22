@@ -16,7 +16,7 @@ def run():
         result = asyncio.run(
             TccwKnowledgeDocAgent()
             .crew()
-            .kickoff_async(
+            .kickoff(
                 inputs={
                     "notes_subject": processed_data["topic"],
                     "transcription": processed_data["content"],
