@@ -43,46 +43,9 @@ def get_env(key: str) -> Any:
     return ENVIRONMENT.get(key)
 
 
-def get_and_merge_objects(bucket: str, prefix: str) -> str:
-    """
-    Fetches all objects from the given prefix in the bucket and merges their content.
-    """
-    print(f"Fetching all objects from bucket {bucket} with prefix {prefix}")
-
-    if not prefix.endswith("/"):
-        prefix = prefix + "/"
-
-    response = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix)
-
-    if "Contents" not in response:
-        print(f"No objects found in {bucket}/{prefix}")
-        return ""
-
-    object_keys = [obj["Key"] for obj in response["Contents"]]
-    print(f"Found {len(object_keys)} objects: {object_keys}")
-
-    merged_content = ""
-
-    for key in object_keys:
-        if key.endswith("/"):
-            continue
-
-        print(f"Getting content of {key}")
-        obj = s3_client.get_object(Bucket=bucket, Key=key)
-        content = obj["Body"].read().decode("utf-8")
-
-        if merged_content:
-            merged_content += "\n\n--- New File ---\n\n"
-
-        merged_content += f"File: {key}\n{content}"
-
-    print(f"Total merged content size: {len(merged_content)} characters")
-    return merged_content
-
-
 def get_processed_content() -> Dict[str, Any]:
     """
-    Process document from S3 and return content and topic
+    Process a single document from S3 using the S3_OBJECT_KEY
     """
     try:
         bucket = get_env("S3_BUCKET_NAME")
@@ -94,17 +57,16 @@ def get_processed_content() -> Dict[str, Any]:
             )
             return {"topic": "AI LLMs", "content": "No content available"}
 
-        path_parts = key.split("/")
+        print(f"Getting content of {key}")
+        obj = s3_client.get_object(Bucket=bucket, Key=key)
+        content = obj["Body"].read().decode("utf-8")
 
-        if len(path_parts) <= 1:
-            container_prefix = ""
-        else:
-            container_prefix = "/".join(path_parts[:-1]) + "/"
+        # Extract topic from key (filename)
+        topic = key.split("/")[-1]
 
-        merged_content = get_and_merge_objects(bucket, container_prefix)
         return {
-            "topic": path_parts[-1],
-            "content": merged_content or "No content available",
+            "topic": topic,
+            "content": content or "No content available",
         }
 
     except Exception as e:
