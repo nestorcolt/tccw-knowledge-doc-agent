@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
 WORKDIR /app
+ARG CPU_ARCHITECTURE=x86_64
 
 # Install dependencies
 RUN apt-get update && \
@@ -8,8 +9,12 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install AWS CLI v2
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+# Install AWS CLI v2 based on architecture
+RUN if [ "$CPU_ARCHITECTURE" = "ARM64" ]; then \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"; \
+    else \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; \
+    fi && \
     unzip awscliv2.zip && \
     ./aws/install && \
     rm -rf aws awscliv2.zip
