@@ -10,7 +10,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install AWS CLI v2 based on architecture
-RUN if [ "$CPU_ARCHITECTURE" = "ARM64" ]; then \
+RUN if [ "$CPU_ARCHITECTURE" = "arm64" ]; then \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"; \
     else \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; \
