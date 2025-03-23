@@ -66,5 +66,5 @@ module "ai_agent" {
   versioned_tag_retention_count  = 10
   versioned_tag_prefixes         = ["v", "release", "dev"]
   untagged_image_expiration_days = 7
-  force_build                    = true
+  force_build                    = false
 }
