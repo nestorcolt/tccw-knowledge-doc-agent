@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from tccw_knowledge_doc_agent.crew import TccwKnowledgeDocAgent, get_processed_content
 import warnings
-import asyncio
 import sys
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
@@ -13,17 +12,13 @@ def run():
     Run the crew with content from S3 if available, otherwise use default
     """
     try:
-        result = asyncio.run(
-            TccwKnowledgeDocAgent()
-            .crew()
-            .kickoff(
-                inputs={
-                    "notes_subject": processed_data["topic"],
-                    "transcription": processed_data["content"],
-                }
-            )
+        TccwKnowledgeDocAgent().crew().kickoff(
+            inputs={
+                "notes_subject": processed_data["topic"],
+                "transcription": processed_data["content"],
+            }
         )
-        return result
+
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
 
