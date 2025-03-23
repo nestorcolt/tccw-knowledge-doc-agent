@@ -24,8 +24,8 @@ type = "crew"
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[project.optional-dependencies]
-dev = [
-    # Use proper editable install syntax
-    "cognition-core @ file:///home/iamroot/dev/cognition-core",
-]
+# [project.optional-dependencies]
+# dev = [
+#     # Use proper editable install syntax
+#     "cognition-core @ file:///home/iamroot/dev/cognition-core",
+# ]

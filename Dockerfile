@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git openssh-client curl unzip && \
+    apt-get install -y --no-install-recommends git openssh-client curl unzip jq && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -22,6 +22,8 @@ COPY knowledge/ /app/knowledge/
 # Install the application
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e .
+
+RUN crewai install
 
 # Set environment variables
 ENV AGENT_TASKS_TABLE_NAME=""
@@ -43,15 +45,10 @@ RUN chmod 600 /root/.ssh/id_rsa \
 ENTRYPOINT ["sh", "-c", "\
     aws secretsmanager get-secret-value --secret-id $GITHUB_PEM_SECRET_ID --query SecretString --output text > /root/.ssh/id_rsa && \
     aws secretsmanager get-secret-value --secret-id $ENV_FILE_SECRET_ID --query SecretString --output text > /root/.env && \
-    DEBUG_MODE=false && \
     aws dynamodb get-item --table-name $AGENT_TASKS_TABLE_NAME --key '{\"task_id\":{\"S\":\"'$TASK_ID'\"}}' > /app/config.json 2>/dev/null || echo '{\"Item\":{}}' > /app/config.json && \
-    if grep -q '\"debug_mode\":{\"BOOL\":true}' /app/config.json; then \
-    DEBUG_MODE=true; \
-    echo 'Debug mode enabled from DynamoDB configuration'; \
-    else \
-    echo 'Debug mode disabled (default or from DynamoDB configuration)'; \
-    fi && \
-    { python -m tccw_knowledge_doc_agent.main || echo 'Main module failed with exit code $?'; } && \
+    DEBUG_MODE=$(jq -r '.Item.debug_mode.BOOL // false' /app/config.json) && \
+    echo \"Debug mode: $DEBUG_MODE\" && \
+    { crewai run || echo 'Main module failed with exit code $?'; } && \
     if [ \"$DEBUG_MODE\" = \"true\" ]; then \
     echo 'Container sleeping for 30 MINS for debugging...' && \
     sleep 1800; \
